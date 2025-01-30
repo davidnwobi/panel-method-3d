@@ -1,0 +1,18 @@
+# ComponentNum
+1
+# Component0
+# SurfNodeNumPts
+4
+# SurfFaceNumPts
+1
+# WakeFaceNumPts
+1
+# Nodes,x,y,z
+0,1,0,0
+1,0,0,0
+2,0,1,0
+3,1,1,0
+# SurfPanels,P1,P2,P3,P4
+0,0,1,2,3
+# WakePanels,P1,P2
+0,0,4

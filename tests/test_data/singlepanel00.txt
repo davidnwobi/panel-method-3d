@@ -1,0 +1,30 @@
+# ComponentNum
+1
+# Component0
+# SurfNodeNumPts
+4
+# SurfFaceNumPts
+1
+# nXsecs
+1
+# nYsecs
+1
+# Nodes,x,y,z
+0,-0.5,-0.5,0
+1,-0.5,0.5,0
+2,0.5,0.5,0
+3,0.5,-0.5,0
+# SurfPanels,P1,P2,P3,P4
+0,0,1,2,3
+#WAKE
+# SurfNodeNumPts
+0
+# SurfFaceNumPts
+0
+# nXsecs
+0
+# nYsecs
+0
+# Nodes,x,y,z
+# SurfPanels,P1,P2,P3,P4
+# TrailingEdgeFaces,Lower,Upper
