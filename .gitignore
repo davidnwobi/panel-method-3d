@@ -1049,3 +1049,4 @@ dkms.conf
 /build
 /out_cpp
 /.cache
+/tests/test_data

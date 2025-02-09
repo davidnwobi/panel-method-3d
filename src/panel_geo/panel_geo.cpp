@@ -82,13 +82,15 @@ void PanelGeometry<T>::calculateCentrePointsandVectors() {
   tangentXVectors.matrix().rowwise().normalize();
 
   // tangetial vector in the y direction wrt face
-  tangentYVectors = c30 - c12;
+  tangentYVectors = (c30 - c12);
   tangentYVectors.matrix().rowwise().normalize();
 
   // normal vector in the z direction wrt face
   normalVectors =
       PanelGeometryUtils::rowwiseCross(tangentXVectors, tangentYVectors);
   normalVectors.matrix().rowwise().normalize();
+
+  // centrePoints = centrePoints - normalVectors * 0.0001;
 }
 
 template <SurfaceType T>

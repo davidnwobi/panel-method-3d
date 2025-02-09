@@ -38,5 +38,5 @@ public:
     freeStream = {std::cos(angleOfAttack), 0, std::sin(angleOfAttack)};
   };
   virtual void run() = 0;
-  ~IPanelMethod() = default;
+  virtual ~IPanelMethod() = default;
 };

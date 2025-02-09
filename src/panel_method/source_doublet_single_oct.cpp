@@ -1,7 +1,9 @@
-#include "panel_method/source_doublet_single.hpp"
+#include "panel_method/source_doublet_single_oct.hpp"
 #include "central_difference.hpp"
+#include "evalPoints.hpp"
 #include "infMat.hpp"
 #include "panel_method/ipanel.hpp"
+#include "pm_octree_defs.hpp"
 #include "singularity/const_doublet.hpp"
 #include "singularity/const_source.hpp"
 #include "solver/dense_solver.hpp"
@@ -10,13 +12,13 @@
 #include <Eigen/Core>
 #include <algorithm>
 
-Eigen::MatrixXd SourceDoubletSingle::assembleLhs() {
+Eigen::MatrixXd SourceDoubletSingleOct::assembleLhs() {
 
   std::size_t evalDims = evalPointsRef.get().mEvalPoints.rows();
   std::size_t wakeDims = wakePanelCompTasks.size();
   Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
       evalDims, evalDims, surfacePanelCompTasks);
-  // std::cout << surfaceInfluenceMatrix.topLeftCorner(10, 10) << "\n";
+  std::cout << surfaceInfluenceMatrix.topLeftCorner(10, 10) << "\n";
   Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
       evalDims, wakeDims, wakePanelCompTasks);
 
@@ -40,7 +42,7 @@ Eigen::MatrixXd SourceDoubletSingle::assembleLhs() {
   return surfaceInfluenceMatrix;
 }
 
-Eigen::VectorXd SourceDoubletSingle::assembleRhs() {
+Eigen::VectorXd SourceDoubletSingleOct::assembleRhs() {
   std::size_t evalDims = evalPointsRef.get().mEvalPoints.rows();
   Eigen::MatrixXd sourceInfluenceMat = makeInfluenceMatrix<SourceP, true>(
       evalDims, evalDims, surfacePanelCompTasks);
@@ -49,7 +51,7 @@ Eigen::VectorXd SourceDoubletSingle::assembleRhs() {
   return -(sourceInfluenceMat * sourceStrength);
 }
 
-Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
+Eigen::MatrixXd SourceDoubletSingleOct::calculatePanelVelocities() {
   auto &panel = IPM::surfacePanelRef.get();
   std::size_t nYSecs = panel.mSurface.nYsecs;
   std::size_t nXsecs = panel.mSurface.nXsecs;
@@ -84,7 +86,6 @@ Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
                         yPoints(iX, iY - 1);
     }
   }
-  Eigen::ArrayXXd zPoints = panel.centrePoints.col(2).reshaped(nXsecs, nYSecs);
 
   // 2:) u = -d(mu)/d(x_l); v = -d(mu)/d(y_l); w = sigma
   Eigen::ArrayXXd fPoints(nXsecs, nYSecs);
@@ -100,12 +101,9 @@ Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
       rowwiseDotProduct(panel.tangentYVectors, IPM::freeStream),
       rowwiseDotProduct(panel.normalVectors, IPM::freeStream);
 
-  xPoints = panel.centrePoints.col(0).reshaped(nXsecs, nYSecs);
   // NOTE: FOR DEBUGGING
   FileReaderFactory::make_file_reader("dat", " ", true)
       ->save_data(std::string(ANALYSIS_DIR) + "/xPoints.dat", xPoints);
-  FileReaderFactory::make_file_reader("dat", " ", true)
-      ->save_data(std::string(ANALYSIS_DIR) + "/zPoints.dat", zPoints);
 
   FileReaderFactory::make_file_reader("dat", " ", true)
       ->save_data(std::string(ANALYSIS_DIR) + "/fPoints.dat", fPoints);
@@ -122,7 +120,7 @@ Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
   return globalVelocites + inducedVelocities;
 }
 
-SourceDoubletSingle::SourceDoubletSingle(
+SourceDoubletSingleOct::SourceDoubletSingleOct(
     const PanelGeometry<SurfacePanel> &surfacePanelGeo,
     const PanelGeometry<WakePanel> &wakePanelGeo,
     const EvalPoints<double> &evalPoints, std::unique_ptr<ISolver> &&solver,
@@ -132,27 +130,72 @@ SourceDoubletSingle::SourceDoubletSingle(
   IPM::setFlowParams(AoAd);
 }
 
-void SourceDoubletSingle::run() {
+template <typename PanelGeo>
+std::vector<std::vector<std::size_t>>
+getAllNeighbours(const PanelGeo &surfacePanelGeo,
+                 const EvalPoints<double> &evalPoints,
+                 const Eigen::ArrayXd &searchRadius) {
+
+  const auto cloud = convertMat2Cloud(evalPoints.mEvalPoints);
+  double resolution = 100;
+
+  Octree octree(resolution);
+  octree.setInputCloud(cloud);
+  octree.addPointsFromInputCloud();
+
+  const auto searchPoints = createSearchPoints(surfacePanelGeo.centrePoints);
+  const auto allNeighbours = queryOctree(octree, searchPoints, searchRadius);
+  return allNeighbours;
+}
+
+template <typename PanelGeo>
+auto getPanelDiagonalLength(const PanelGeo &panelGeo) -> Eigen::ArrayXd {
+  const auto &faceIdx = panelGeo.mSurface.mFaceNodeIdx;
+  const auto &surfPoints = panelGeo.mSurface.mPoints;
+
+  return (surfPoints(faceIdx.col(0), Eigen::placeholders::all) -
+          surfPoints(faceIdx.col(2), Eigen::placeholders::all))
+      .rowwise()
+      .norm();
+}
+
+template <typename PanelGeo>
+auto makeComputeTasks(const PanelGeo &panelGeo,
+                      const EvalPoints<double> &evalPoints) {
+  int nPanels = panelGeo.centrePoints.rows();
+  auto faceIdxs = RANGE(nPanels);
+  auto allNeighbours = getAllNeighbours(panelGeo, evalPoints,
+                                        getPanelDiagonalLength(panelGeo) * 10);
+  std::size_t totalNum = 0;
+  for (const auto &neighbours : allNeighbours) {
+    totalNum += neighbours.size();
+  }
+  print("Points to evaluate: ", totalNum);
+  print("No EvalPoints: ", evalPoints.mEvalPoints.rows());
+  print("Full Search Space: ",
+        evalPoints.mEvalPoints.rows() * panelGeo.centrePoints.rows());
+  print("Potential Speed Up: ",
+        (double)(evalPoints.mEvalPoints.rows() * panelGeo.centrePoints.rows()) /
+            (double)totalNum);
+  return initialize_transform<std::vector<ComputeTask>>(
+      faceIdxs.begin(), faceIdxs.end(), [&](int faceIdx) {
+        return createInfluenceComputeTask(panelGeo, evalPoints, faceIdx,
+                                          allNeighbours[faceIdx]);
+      });
+};
+void SourceDoubletSingleOct::run() {
   std::vector<std::size_t> idxs(IPM::evalPointsRef.get().mEvalPoints.rows());
   std::iota(idxs.begin(), idxs.end(), 0);
 
-  auto makeComputeTasks =
-      [this]<typename PanelGeo>(const PanelGeo &panelGeo,
-                                const std::vector<std::size_t> &idxs) {
-        int nPanels = panelGeo.centrePoints.rows();
-        auto faceIdxs = RANGE(nPanels);
-        return initialize_transform<std::vector<ComputeTask>>(
-            faceIdxs.begin(), faceIdxs.end(), [&](int faceIdx) {
-              return createInfluenceComputeTask(panelGeo, IPM::evalPointsRef,
-                                                faceIdx, idxs);
-            });
-      };
-
-  surfacePanelCompTasks = makeComputeTasks(IPM::surfacePanelRef.get(), idxs);
-  wakePanelCompTasks = makeComputeTasks(IPM::wakePanelRef.get(), idxs);
+  surfacePanelCompTasks =
+      makeComputeTasks(IPM::surfacePanelRef.get(), IPM::evalPointsRef.get());
+  wakePanelCompTasks =
+      makeComputeTasks(IPM::wakePanelRef.get(), IPM::evalPointsRef.get());
 
   IPM::solution = IPM::solver->solve(assembleLhs(), assembleRhs());
   IPM::velocities = calculatePanelVelocities();
 }
 
-Eigen::ArrayXd SourceDoubletSingle::getSource() const { return sourceStrength; }
+Eigen::ArrayXd SourceDoubletSingleOct::getSource() const {
+  return sourceStrength;
+}

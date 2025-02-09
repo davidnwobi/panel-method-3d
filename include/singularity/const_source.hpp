@@ -4,8 +4,7 @@
 #include <Eigen/Core>
 #include <numbers>
 
-template <bool SelfInfluence = true>
-struct SourceP : IConstant3dSingularity<SourceP, SelfInfluence> {
+struct SourceP : IConstant3dSingularity<SourceP> {
 
   using RowArray3d = Eigen::Array<double, 1, 3, Eigen::RowMajor>;
   static Eigen::ArrayXd part1term1(const Eigen::ArrayX3d &points,
@@ -64,10 +63,6 @@ struct SourceP : IConstant3dSingularity<SourceP, SelfInfluence> {
     using cAr = const ArrayXd &;
     auto termP = [&points](double m, cAr e, cAr h, cAr r) {
       return (m * e - h).atan2(points.col(2) * r); // y/x
-      // return (points.col(2) * r).atan2(m * e - h); // y/x
-      //  return ((m * e - h) / (points.col(2) * r)).atan(); // y/x
-      //   return ((points.col(2) * r) / (m * e - h)).atan(); // y/x
-      //    return (points.col(2) * r).atan2(m * e - h); // y/x
     };
 
     double m12 = m(node1, node2);
@@ -117,5 +112,9 @@ struct SourceP : IConstant3dSingularity<SourceP, SelfInfluence> {
     ArrayXd term2 = -compTask.points.col(2).abs() * (part2t.rowwise().sum());
 
     return -1 / (4 * std::numbers::pi_v<double>)*(term1 + term2);
+  }
+
+  static double calcSelfInfluenceImpl(const ComputeTask &compTask) {
+    return calcInfluenceImpl(compTask)(0);
   }
 };

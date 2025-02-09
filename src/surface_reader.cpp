@@ -2,6 +2,7 @@
 #include "surface/surface_panel.hpp"
 #include "surface/wake_panel.hpp"
 #include <filesystem>
+#include <iostream>
 #include <string>
 #include <utility>
 
@@ -64,10 +65,12 @@ readConvertedComponentsFromFile(const std::filesystem::path &filePath,
 
   std::vector<PanelSet> psets;
   for (int iSurface = 0; iSurface < numberOfSurfaces; iSurface++) {
-    // Skip component name
     PanelSet pset;
+    // Skip component name
     fileReader.getNextLine();
     pset.body = readSurface(fileReader);
+
+    // Skip component name
     fileReader.getNextLine();
     pset.wake = readWake(fileReader);
 

@@ -1,11 +1,11 @@
 #pragma once
+#include "compTask.hpp"
 #include "singularity/iconst_sing.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
 #include <numbers>
 
-template <bool SelfInfluence = true>
-struct DoubletP : IConstant3dSingularity<DoubletP, SelfInfluence> {
+struct DoubletP : IConstant3dSingularity<DoubletP> {
   using RowArray3d = Eigen::Array<double, 1, 3, Eigen::RowMajor>;
   static Eigen::ArrayXd term(const Eigen::ArrayX3d &points,
                              const RowArray3d &node1, const RowArray3d &node2) {
@@ -29,9 +29,6 @@ struct DoubletP : IConstant3dSingularity<DoubletP, SelfInfluence> {
     using cAr = const ArrayXd &;
     auto termP = [&points](double m, cAr e, cAr h, cAr r) {
       return (m * e - h).atan2(points.col(2) * r); // y/x
-      // return (points.col(2) * r).atan2(m * e - h); // y/x
-      //  return ((m * e - h) / (points.col(2) * r)).atan(); // y/x
-      //   return ((points.col(2) * r) / (m * e - h)).atan(); // y/x
     };
 
     double m12 = m(node1, node2);
@@ -62,10 +59,10 @@ struct DoubletP : IConstant3dSingularity<DoubletP, SelfInfluence> {
     ArrayXd inf = 1 / (4 * std::numbers::pi_v<double>)*(term1).rowwise().sum();
 
     // Self influence;
-    if constexpr (SelfInfluence) {
-      ;
-      inf(compTask.face.faceIdx) = -0.5;
-    }
     return inf;
+  }
+  static double calcSelfInfluenceImpl(const ComputeTask &compTask) {
+    UNUSED(compTask);
+    return -0.5;
   }
 };

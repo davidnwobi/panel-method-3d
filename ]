@@ -1,0 +1,81 @@
+﻿#include "aerocalcs/aerocalcsingle.hpp"
+#include "panel_geo/panel_geo.hpp"
+#include "panel_method/source_doublet_single.hpp"
+#include "panel_method/source_doublet_single_oct.hpp"
+#include "solver/dense_solver.hpp"
+#include "solver/sparse_solver.hpp"
+#include "surface/surface_reader.hpp"
+#include "utils/utils.hpp"
+
+#include "pm_octree_defs.hpp"
+#include <Eigen/Core>
+#include <filesystem>
+#include <memory>
+#include <ranges>
+#include <string>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+// #define RANGE(n) views::iota(0, (int)n)
+//
+int main() {
+  namespace fs = std::filesystem;
+
+  fs::path testDataLoc(std::string(SOURCE_DIR) + "/tests/test_data");
+  fs::path filePath(testDataLoc.string() + "/validation_cylinder.txt");
+  //
+  auto pset = readConvertedComponentsFromFile(filePath)[0];
+  PanelGeometry<SurfacePanel> body(pset.body);
+  PanelGeometry<SurfacePanel> wake(pset.wake);
+
+  EvalPoints<double> evalPoints(body.centrePoints);
+  //  auto getPanelDiagonalLength =
+  //      []<typename PanelGeo>(const PanelGeo &panelGeo) -> Eigen::ArrayXd {
+  //    const auto &faceIdx = panelGeo.mSurface.mFaceNodeIdx;
+  //    const auto &surfPoints = panelGeo.mSurface.mPoints;
+  //
+  //    return (surfPoints(faceIdx.col(0), Eigen::placeholders::all) -
+  //            surfPoints(faceIdx.col(2), Eigen::placeholders::all))
+  //        .rowwise()
+  //        .norm();
+  //  };
+  // const auto allNeighbours =
+  //     getAllNeighbours(body, evalPoints, getPanelDiagonalLength(body) * 3);
+
+  // std::size_t totalNum = 0;
+  // std::vector<std::size_t> first;
+  // for (const auto &neighbours : allNeighbours) {
+  //   totalNum += neighbours.size();
+  //   first.push_back(neighbours[0]);
+  // }
+  // print("Points to evaluate: ", totalNum);
+  // print("No EvalPoints: ", evalPoints.mEvalPoints.rows());
+  // print("Full Search Space: ", std::pow(evalPoints.mEvalPoints.rows(), 2));
+  // print("Potential Speed Up: ",
+  //       std::pow(evalPoints.mEvalPoints.rows(), 2) / totalNum);
+
+  int n = 21;
+  AeroCalcSingle calc(std::move(readConvertedComponentsFromFile(filePath)[0]),
+                      {20.0}, std::type_identity<SourceDoubletSingle>{},
+                      std::make_unique<SparseSolver>());
+
+  calc.run({10, 1, 1});
+  // Eigen::ArrayX2d polars(n, 2);
+  // polars.setZero();
+  // for (const auto i : std::ranges::views::iota(18, n)) {
+  //   calc.run({i * 0.5, 1, 1});
+  //   polars(i, 0) = calc.polars["aoa"];
+  //   polars(i, 1) = calc.polars["CL"];
+  //   print("aoa: ", polars(i, 0), ",  CL: ", polars(i, 1));
+  // }
+
+  // FileReaderFactory::make_file_reader("dat", " ", true)
+  //     ->save_data(std::string(ANALYSIS_DIR) + "/polars.dat", polars);
+  // FileReaderFactory::make_file_reader("dat", " ", true)
+  //     ->save_data(std::string(testDataLoc) +
+  //                     "/test_case_validation_wing/polars.dat",
+  //                 polars);
+  return 0;
+
+  return 0;
+}

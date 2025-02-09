@@ -1,14 +1,10 @@
 #pragma once
 #include "surface/surface_panel.hpp"
-#include "surface/surface_reader.hpp"
 #include "surface/wake_panel.hpp"
 #include <filesystem>
 #include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 template <class ScalarType> ScalarType stringToNum(const std::string &str) {

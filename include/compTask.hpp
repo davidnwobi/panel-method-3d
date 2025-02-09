@@ -29,6 +29,7 @@ ComputeTask createInfluenceComputeTask(const PanelGeometry<Surface> &panelGeo,
 
   // Convert Points
   compTask.indices = idx;
-  compTask.points = panelGeo.convertToLocal(faceIdx, evalPoints.mEvalPoints);
+  compTask.points = panelGeo.convertToLocal(
+      faceIdx, evalPoints.mEvalPoints(idx, Eigen::placeholders::all));
   return compTask;
 }

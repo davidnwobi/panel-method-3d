@@ -1,10 +1,12 @@
 
+#include "panel_method/ipanel.hpp"
 #include "panel_method/source_doublet_single.hpp"
 #include "solver/isolver.hpp"
 #include "surface/surface_reader.hpp"
 #include <Eigen/Core>
 #include <panel_geo/panel_geo.hpp>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 
 class AeroCalcSingle {
@@ -28,8 +30,15 @@ public:
   AeroSpanResults spanResults;
   AeroPolars polars;
 
+  template <typename ConcretePanelMethod>
   AeroCalcSingle(PanelSet &&pSet, ReferenceGeom &&refGeom,
-                 std::unique_ptr<ISolver> &&solver);
+                 std::type_identity<ConcretePanelMethod> &&,
+                 std::unique_ptr<ISolver> &&solver)
+      : pSet(pSet), refGeom(refGeom), surfacePanelGeo(pSet.body),
+        wakePanelGeo(pSet.wake), evalPoints(surfacePanelGeo.centrePoints),
+        pm(std::make_unique<ConcretePanelMethod>(surfacePanelGeo, wakePanelGeo,
+                                                 evalPoints, std::move(solver),
+                                                 0.0)) {}
   void run(FlowParams &&params);
 
 private:
@@ -37,7 +46,7 @@ private:
   PanelGeometry<SurfacePanel> surfacePanelGeo;
   PanelGeometry<WakePanel> wakePanelGeo;
   EvalPoints<double> evalPoints;
-  SourceDoubletSingle pm;
+  std::unique_ptr<IPanelMethod> pm;
 
   void post_process();
   void postProcessPanelResults();

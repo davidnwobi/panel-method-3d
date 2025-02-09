@@ -1,15 +1,11 @@
 #include "aerocalcs/aerocalcsingle.hpp"
 #include "utils/utils.hpp"
+#include <string>
 
-AeroCalcSingle::AeroCalcSingle(PanelSet &&pSet, ReferenceGeom &&refGeom,
-                               std::unique_ptr<ISolver> &&solver)
-    : pSet(pSet), refGeom(refGeom), surfacePanelGeo(pSet.body),
-      wakePanelGeo(pSet.wake), evalPoints(surfacePanelGeo.centrePoints),
-      pm(surfacePanelGeo, wakePanelGeo, evalPoints, std::move(solver), 0) {};
 void AeroCalcSingle::run(FlowParams &&params) {
   lastParams = std::move(params);
-  pm.setFlowParams(lastParams.aoa);
-  pm.run();
+  pm->setFlowParams(lastParams.aoa);
+  pm->run();
   post_process();
 }
 
@@ -17,14 +13,39 @@ void AeroCalcSingle::post_process() {
   postProcessPanelResults();
   postProcessPolars();
   postProcessSpanResults();
+  auto nXsecs = surfacePanelGeo.mSurface.nXsecs;
+  auto nYsecs = surfacePanelGeo.mSurface.nYsecs;
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/velocities.dat",
+                  pm->getComputedVelocites());
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/liftCoeff.dat",
+                  spanResults["spanLift"]);
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/xPoints.dat",
+                  surfacePanelGeo.centrePoints.col(0).reshaped(nXsecs, nYsecs));
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/yPoints.dat",
+                  surfacePanelGeo.centrePoints.col(1).reshaped(nXsecs, nYsecs));
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/zPoints.dat",
+                  surfacePanelGeo.centrePoints.col(2).reshaped(nXsecs, nYsecs));
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/doubletDist.dat",
+                  pm->getSolution());
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/pressure_" +
+                      std::to_string((int)lastParams.aoa) + ".dat",
+                  panelResults["dCp"]);
+
   print("Lift Coeff: ", polars["CL"]);
   print("Drag Coeff: ", polars["CD"]);
 }
 
 void AeroCalcSingle::postProcessPanelResults() {
-  const Eigen::ArrayXXd &dV = pm.getComputedVelocites();
+  const Eigen::ArrayXXd &dV = pm->getComputedVelocites();
 
-  Eigen::ArrayXd dCp = 1 - (pm.getComputedVelocites().rowwise().squaredNorm());
+  Eigen::ArrayXd dCp = 1 - (pm->getComputedVelocites().rowwise().squaredNorm());
 
   double q = 0.5 * lastParams.rho * lastParams.Vinf * lastParams.Vinf;
   Eigen::ArrayXd dP = q * dCp;

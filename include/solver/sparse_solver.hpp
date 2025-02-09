@@ -13,7 +13,7 @@ struct SparseSolver : ISolver {
                         const Eigen::VectorXd &rhs) override {
     // FileReaderFactory::make_file_reader("dat", " ",
     // true)->save_data(std::string(ANALYSIS_DIR) + "/infMat.dat", lhs);
-    double lim = 1e-6;
+    double lim = 1e-8;
     std::cout << "Creating...\n";
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> T;

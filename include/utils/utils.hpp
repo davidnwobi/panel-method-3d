@@ -20,10 +20,24 @@
 #include <type_traits>
 #include <vector>
 
+#define UNUSED(obj) (void)(obj);
 template <typename... Args> void print(Args &&...args) {
   (std::cout << ... << args) << "\n";
 }
 
+template <typename T>
+concept Printable = requires(std::ostream &os, const T &a) {
+  { os << a } -> std::same_as<std::ostream &>;
+};
+
+template <std::ranges::input_range R> void print_range(const R &inputRange) {
+  using T = std::decay_t<decltype(*inputRange.begin())>;
+  static_assert(Printable<T>);
+  std::ranges::copy(inputRange, std::ostream_iterator<T>(std::cout, " \n"));
+  std::cout << "\n";
+}
+
+#define PRINT_RANGE(container) print_range(container);
 #define assertm(exp, msg) assert(((void)msg, exp))
 std::vector<std::string> split(const std::string &line,
                                const std::string &delimiter);
@@ -243,19 +257,21 @@ Container initialize_transform(ForwardIt1 first1, ForwardIt1 last1,
   return container;
 }
 
-template <class EigenMatrixType>
-EigenMatrixType vMerge(EigenMatrixType matA, EigenMatrixType matB) {
+template <class EigenMatrixTypeA, class EigenMatrixTypeB>
+constexpr auto vMerge(EigenMatrixTypeA &&matA, EigenMatrixTypeB &&matB) {
 
   // Figure out whether we can reuse memory from here rather than making copies.
   // Actually we can. Get PanelGeometry to consume this and have a decompose
   // method.
 
   // Vectically merge two eigen matrices into one. Consuming!
+  using AType = std::decay_t<EigenMatrixTypeA>;
   assertm(matA.cols() == matB.cols(),
           "MAT_A_AND_MAT_B_MUST_HAVE_THE_SAME_NUMBER_OF_COLUMNS");
 
-  EigenMatrixType matC(matA.rows() + matB.rows(), matA.cols());
-  matC << std::move(matA), std::move(matB);
+  AType matC(matA.rows() + matB.rows(), matA.cols());
+  matC << std::forward<EigenMatrixTypeA>(matA),
+      std::forward<EigenMatrixTypeB>(matB);
 
   return matC;
 }
@@ -329,3 +345,15 @@ std::string demangle(const char *mangledName);
 Eigen::ArrayXd
 rowwiseDotProduct(const Eigen::ArrayXXd &a1,
                   const Eigen::Array<double, 1, -1, Eigen::RowMajor> &a2);
+
+template <typename MatA, typename MatB, typename... Rest>
+auto vMergeRecursive(MatA &&matA, MatB &&matB,
+                     Rest... mats) -> std::decay_t<MatA> {
+  auto merged = vMerge(std::forward<MatA>(matA), std::forward<MatB>(matB));
+
+  if constexpr (sizeof...(mats) == 0) {
+    return merged;
+  } else {
+    return vMergeRecursive(std::move(merged), std::forward<Rest>(mats)...);
+  }
+}
