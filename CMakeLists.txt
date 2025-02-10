@@ -7,9 +7,14 @@ set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_CXX_STANDARD_REQUIRED True)
 set (CMAKE_EXPORT_COMPILE_COMMANDS on)
 cmake_policy(SET CMP0135 NEW)
+if (BENCH)
+  add_compile_definitions(BENCHMARKING=1)
+  message("BENCHMARKING SET\n")
+else()
+  add_compile_definitions(BENCHMARKING=0)
+endif()
 
 add_compile_definitions(SOURCE_DIR="${CMAKE_SOURCE_DIR}")
-#add_compile_definitions(ANALYSIS_DIR="${CMAKE_SOURCE_DIR}/out_cpp")
 add_compile_definitions(ANALYSIS_DIR="/home/okwuchukwu-nwobi/Projects/PanelMethods/python/out_cpp")
 #add_compile_options(-Werror -Wall -Wextra -pedantic-errors -Wno-conversion -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-sign-compare -g -O3)
 add_compile_options(-O3 -march=native)
@@ -63,7 +68,12 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET main PROPERTY CXX_STANDARD 20)
 endif()
 
-
+# NOTE: BENCHMARKING
+find_package(benchmark REQUIRED)
+add_executable(bench bench.cpp)
+target_link_libraries(bench PUBLIC benchmark::benchmark PanelMethods mat_reader)
+target_compile_definitions(bench PUBLIC BENCHMARK_STATIC_DEFINE)
+set(BENCHMARK_ENABLE_TESTING OFF)
 
 #  TODO: Add tests and install targets if needed.
 

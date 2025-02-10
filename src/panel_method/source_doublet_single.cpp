@@ -101,6 +101,8 @@ Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
       rowwiseDotProduct(panel.normalVectors, IPM::freeStream);
 
   xPoints = panel.centrePoints.col(0).reshaped(nXsecs, nYSecs);
+#if (BENCHMARKING == 0)
+  std::cout << "Writing Panel Method\n";
   // NOTE: FOR DEBUGGING
   FileReaderFactory::make_file_reader("dat", " ", true)
       ->save_data(std::string(ANALYSIS_DIR) + "/xPoints.dat", xPoints);
@@ -117,7 +119,10 @@ Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
       ->save_data(std::string(ANALYSIS_DIR) + "/gvelocities.dat",
                   globalVelocites);
 
+  std::cout << "Done Writing PanelMethod\n";
+
   std::cout << "Solve Completed\n";
+#endif
   // 3:) V = V_g + V_l
   return globalVelocites + inducedVelocities;
 }

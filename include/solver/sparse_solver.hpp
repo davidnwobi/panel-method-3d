@@ -14,7 +14,9 @@ struct SparseSolver : ISolver {
     // FileReaderFactory::make_file_reader("dat", " ",
     // true)->save_data(std::string(ANALYSIS_DIR) + "/infMat.dat", lhs);
     double lim = 1e-8;
+#if (BENCHMARKING == 0)
     std::cout << "Creating...\n";
+#endif
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> T;
 
@@ -30,9 +32,13 @@ struct SparseSolver : ISolver {
     SpMat A(lhs.rows(), lhs.cols());
     A.setFromTriplets(tripletList.begin(), tripletList.end());
     Eigen::SparseLU<SpMat> solver;
+#if (BENCHMARKING == 0)
     std::cout << "Computing...\n";
+#endif
     solver.compute(A);
+#if (BENCHMARKING == 0)
     std::cout << "Solving...\n";
+#endif
     return solver.solve(rhs);
   }
 };

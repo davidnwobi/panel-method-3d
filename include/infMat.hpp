@@ -11,7 +11,9 @@ namespace views = std::views;
 template <typename Singularity, bool SelfInfluence> // concept constrain
 Eigen::ArrayXXd
 makeInfluenceMatrix(int m, int n, const std::vector<ComputeTask> &compTaskVec) {
+#if (BENCHMARKING == 0)
   print(__PRETTY_FUNCTION__);
+#endif
   Eigen::ArrayXXd infMat(m, n);
   infMat.setZero();
   auto sortable = compTaskVec[0].indices;
@@ -32,6 +34,8 @@ makeInfluenceMatrix(int m, int n, const std::vector<ComputeTask> &compTaskVec) {
     }
   }
   // print(infMat.topLeftCorner(10, 10));
+#if (BENCHMARKING == 0)
   print("OUT OF: ", __PRETTY_FUNCTION__);
+#endif
   return infMat;
 }

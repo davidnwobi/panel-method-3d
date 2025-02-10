@@ -15,6 +15,9 @@ void AeroCalcSingle::post_process() {
   postProcessSpanResults();
   auto nXsecs = surfacePanelGeo.mSurface.nXsecs;
   auto nYsecs = surfacePanelGeo.mSurface.nYsecs;
+
+#if (BENCHMARKING == 0)
+  std::cout << "Writing AeroCalc Method\n";
   FileReaderFactory::make_file_reader("dat", " ", true)
       ->save_data(std::string(ANALYSIS_DIR) + "/velocities.dat",
                   pm->getComputedVelocites());
@@ -40,6 +43,8 @@ void AeroCalcSingle::post_process() {
 
   print("Lift Coeff: ", polars["CL"]);
   print("Drag Coeff: ", polars["CD"]);
+  print("Done Writing AeroCalc Method\n");
+#endif
 }
 
 void AeroCalcSingle::postProcessPanelResults() {
@@ -52,7 +57,6 @@ void AeroCalcSingle::postProcessPanelResults() {
   Eigen::ArrayX3d dF =
       surfacePanelGeo.normalVectors.colwise() * (dP * surfacePanelGeo.areas);
 
-  std::cout << "issue\n";
   panelResults["dCp"] = dCp;
   panelResults["dVx"] = dV.col(0).eval();
   panelResults["dVy"] = dV.col(1).eval();
