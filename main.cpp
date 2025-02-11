@@ -58,7 +58,7 @@ int main() {
 
   Eigen::ArrayX2d polars(n, 2);
   polars.setZero();
-  for (const auto i : std::ranges::views::iota(0, n)) {
+  for (const auto i : std::ranges::views::iota(10, 11)) {
     double aoa = i;
     auto pset = readConvertedComponentsFromFile(filePath)[0];
     rotate_points_about_start(pset.wake.mPoints, aoa);
