@@ -98,12 +98,12 @@ void PanelGeometry<T>::calculateCentrePointsandVectors() {
   centrePoints = ((c01 + c23) / 2).transpose(); // Pick any opposite sides
 
   // tangetial vector in the x direction wrt face
-  tangentXVectors = (c23 - c01).transpose();
-  tangentXVectors.matrix().rowwise().normalize();
+  tangentYVectors = -(c23 - c01).transpose();
+  tangentYVectors.matrix().rowwise().normalize();
 
   // tangetial vector in the y direction wrt face
-  tangentYVectors = (c30 - c12).transpose();
-  tangentYVectors.matrix().rowwise().normalize();
+  tangentXVectors = -(c30 - c12).transpose();
+  tangentXVectors.matrix().rowwise().normalize();
 
   // normal vector in the z direction wrt face
   normalVectors = PanelGeometryUtils::colwiseCross(tangentXVectors.transpose(),
