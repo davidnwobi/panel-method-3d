@@ -37,9 +37,12 @@ void AeroCalcSingle::post_process() {
       ->save_data(std::string(ANALYSIS_DIR) + "/doubletDist.dat",
                   pm->getSolution());
   FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/pressure" + ".dat",
+                  panelResults["dCp"]);
+  /* FileReaderFactory::make_file_reader("dat", " ", true)
       ->save_data(std::string(ANALYSIS_DIR) + "/pressure_" +
                       std::to_string((int)lastParams.aoa) + ".dat",
-                  panelResults["dCp"]);
+                  panelResults["dCp"]); */
 
   print("Lift Coeff: ", polars["CL"]);
   print("Drag Coeff: ", polars["CD"]);

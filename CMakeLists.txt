@@ -18,10 +18,11 @@ add_compile_definitions(SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 add_compile_definitions(ANALYSIS_DIR="/home/okwuchukwu-nwobi/Projects/PanelMethods/python/out_cpp")
 #add_compile_options(-Werror -Wall -Wextra -pedantic-errors -Wno-conversion -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-sign-compare -g -O3)
 add_compile_options(-O3 -march=native)
+add_compile_options(-g)
 
 # EXTERNAL PACKAGES 
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
-find_package(PCL 1.3 REQUIRED)
+#find_package(PCL 1.3 REQUIRED)
 
 
 # NOTE: PanelMethods Library
@@ -46,9 +47,9 @@ set_target_properties(
   LINKER_LANGUAGE 
   CXX
 )
-include_directories(${PCL_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
+#include_directories(${PCL_INCLUDE_DIRS})
+#link_directories(${PCL_LIBRARY_DIRS})
+#add_definitions(${PCL_DEFINITIONS})
 
 target_include_directories(PanelMethods PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(PanelMethods PUBLIC Eigen3::Eigen )
@@ -56,7 +57,7 @@ target_link_libraries(PanelMethods PUBLIC Eigen3::Eigen )
 
 add_library(mat_reader ${PROJECT_SOURCE_DIR}/src/mat_reader/mat_reader.cpp) 
 target_include_directories (mat_reader PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(mat_reader Eigen3::Eigen ${PCL_LIBRARIES})
+target_link_libraries(mat_reader Eigen3::Eigen)
 
 
 # NOTE: Main

@@ -276,8 +276,9 @@ constexpr auto vMerge(EigenMatrixTypeA &&matA, EigenMatrixTypeB &&matB) {
   return matC;
 }
 
-template <class EigenMatrixType>
-EigenMatrixType hMerge(EigenMatrixType matA, EigenMatrixType matB) {
+template <class ReturnType = Eigen::ArrayXXd, class DerivedA, class DerivedB>
+ReturnType hMerge(const Eigen::EigenBase<DerivedA> &matA,
+                  const Eigen::EigenBase<DerivedB> &matB) {
 
   // Figure out whether we can reuse memory from here rather than making copies.
   // Actually we can. Get PanelGeometry to consume this and have a decompose
@@ -287,12 +288,12 @@ EigenMatrixType hMerge(EigenMatrixType matA, EigenMatrixType matB) {
   assertm(matA.rows() == matB.rows(),
           "MAT_A_AND_MAT_B_MUST_HAVE_THE_SAME_NUMBER_OF_ROWS");
 
-  EigenMatrixType matC(matA.rows(), matA.cols() + matB.cols());
+  ReturnType matC(matA.rows(), matA.cols() + matB.cols());
   auto a = matA.cols();
   auto b = matB.cols();
 
-  matC.middleCols(0, a) = std::move(matA);
-  matC.middleCols(a, b) = std::move(matB);
+  matC.middleCols(0, a) = matA;
+  matC.middleCols(a, b) = matB;
 
   return matC;
 }

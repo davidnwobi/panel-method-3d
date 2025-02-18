@@ -6,29 +6,32 @@
 #include <numbers>
 
 struct DoubletP : IConstant3dSingularity<DoubletP> {
-  using RowArray3d = Eigen::Array<double, 1, 3, Eigen::RowMajor>;
-  static Eigen::ArrayXd term(const Eigen::ArrayX3d &points,
-                             const RowArray3d &node1, const RowArray3d &node2) {
+  static Eigen::ArrayXd term(const Eigen::Ref<const Eigen::Array3Xd> &points,
+                             const Eigen::Ref<const Eigen::Array3d> &node1,
+                             const Eigen::Ref<const Eigen::Array3d> &node2) {
 
     using namespace Eigen;
-
     // 0 -> x ; 1 -> y ; 2 -> z
-    auto ek = [&points](const RowArray3d &faceV) {
-      return (points.col(0) - faceV(0)).square() + points.col(2).square();
+    auto ek = [&points](const Eigen::Ref<const Eigen::Array3d> &faceV) {
+      return (points.row(0) - faceV(0)).square() + points.row(2).square();
     };
-    auto hk = [&points](const RowArray3d &faceV) {
-      return (points.col(0) - faceV(0)) * (points.col(1) - faceV(1));
+    auto hk = [&points](const Eigen::Ref<const Eigen::Array3d> &faceV) {
+      return (points.row(0) - faceV(0)) * (points.row(1) - faceV(1));
     };
-    auto m = [](const RowArray3d &point1, const RowArray3d &point2) {
+    auto m = [](const Eigen::Ref<const Eigen::Array3d> &point1,
+                const Eigen::Ref<const Eigen::Array3d> &point2) {
       return (point2(1) - point1(1)) / (point2(0) - point1(0));
     };
-    auto r = [&points](const RowArray3d &faceV) {
-      return (points.rowwise() - faceV).matrix().rowwise().norm();
+    auto r = [&points](const Eigen::Ref<const Eigen::Array3d> &faceV) {
+      return (points - faceV.replicate(1, points.cols()))
+          .matrix()
+          .colwise()
+          .norm();
     };
 
-    using cAr = const ArrayXd &;
+    using cAr = const Eigen::Ref<const ArrayXd> &;
     auto termP = [&points](double m, cAr e, cAr h, cAr r) {
-      return (m * e - h).atan2(points.col(2) * r); // y/x
+      return (m * e - h).atan2(points.row(2).transpose() * r); // y/x
     };
 
     double m12 = m(node1, node2);
@@ -47,18 +50,18 @@ struct DoubletP : IConstant3dSingularity<DoubletP> {
 
   static Eigen::ArrayXd calcInfluenceImpl(const ComputeTask &compTask) {
     // std::abs(point(2)) < 1e-6,
+
     using namespace Eigen;
-    ArrayXXd term1(compTask.indices.size(), compTask.face.points.rows());
-
-    apply_adjacent_circular(
-        compTask.face.points.rowwise().begin(),
-        compTask.face.points.rowwise().end(), term1.colwise().begin(),
-        [&](const RowArray3d &node1, const RowArray3d &node2) {
-          return term(compTask.points, node1, node2);
-        });
-    ArrayXd inf = 1 / (4 * std::numbers::pi_v<double>)*(term1).rowwise().sum();
-
-    // Self influence;
+    const Eigen::Array3Xd fPoints = compTask.face.points.transpose();
+    ArrayXXd term1(fPoints.cols(), compTask.points.transpose().cols());
+    apply_adjacent_circular(fPoints.colwise().begin(), fPoints.colwise().end(),
+                            term1.rowwise().begin(),
+                            [&](const Eigen::Ref<const Eigen::Array3d> &node1,
+                                const Eigen::Ref<const Eigen::Array3d> &node2) {
+                              return term(compTask.points.transpose(), node1,
+                                          node2);
+                            });
+    ArrayXd inf = 1 / (4 * std::numbers::pi_v<double>)*(term1).colwise().sum();
     return inf;
   }
   static double calcSelfInfluenceImpl(const ComputeTask &compTask) {

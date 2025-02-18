@@ -10,6 +10,8 @@ struct ComputeTask {
   struct Face {
     Eigen::ArrayX3d points;
     std::size_t faceIdx;
+    Eigen::Array3d centrePoint;
+    double area;
   };
   Face face;
   std::vector<std::size_t> indices;
