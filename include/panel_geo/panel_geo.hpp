@@ -40,6 +40,6 @@ public:
   void panelGeoInit();
   void calculateCentrePointsandVectors();
   Eigen::Isometry3d createLocalConversionMatrix(std::size_t faceIdx);
-  Eigen::ArrayX3d convertToLocal(int faceIdx, const ArrayX3d &points) const;
+  Eigen::Array3Xd convertToLocal(int faceIdx, const Array3Xd &points) const;
   double calcPolyArea(const Eigen::ArrayX3d &vertices) const;
 };

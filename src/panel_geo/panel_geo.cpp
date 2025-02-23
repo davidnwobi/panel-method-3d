@@ -62,9 +62,11 @@ template <SurfaceType T> void PanelGeometry<T>::panelGeoInit() {
   }
   for (int iPanel = 0; iPanel < nPanels; iPanel++) {
     const auto &faceRow = mSurface.mFaceNodeIdx.row(iPanel);
-    localFaceVertices.emplace_back(convertToLocal(
-        iPanel, mSurface.mPoints.transpose()(Eigen::placeholders::all, faceRow)
-                    .transpose()));
+    localFaceVertices.emplace_back(
+        convertToLocal(iPanel, mSurface.mPoints.transpose()(
+                                   Eigen::placeholders::all, faceRow))
+            .transpose()
+            .eval());
   }
 
   for (int iPanel = 0; iPanel < nPanels; iPanel++) {
@@ -131,11 +133,10 @@ PanelGeometry<T>::createLocalConversionMatrix(std::size_t faceIdx) {
 }
 
 template <SurfaceType T>
-Eigen::ArrayX3d PanelGeometry<T>::convertToLocal(int faceIdx,
-                                                 const ArrayX3d &points) const {
+Eigen::Array3Xd PanelGeometry<T>::convertToLocal(int faceIdx,
+                                                 const Array3Xd &points) const {
 
-  return (conversionMatrices[faceIdx] * (points.transpose().matrix()))
-      .transpose();
+  return (conversionMatrices[faceIdx] * (points.matrix()));
 }
 
 template <SurfaceType T>

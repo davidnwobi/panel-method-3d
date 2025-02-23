@@ -1,5 +1,6 @@
 #pragma once
 #include "compTask.hpp"
+#include "singularity/const_doublet_far.hpp"
 #include "singularity/iconst_sing.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
@@ -53,13 +54,12 @@ struct DoubletP : IConstant3dSingularity<DoubletP> {
 
     using namespace Eigen;
     const Eigen::Array3Xd fPoints = compTask.face.points.transpose();
-    ArrayXXd term1(fPoints.cols(), compTask.points.transpose().cols());
+    ArrayXXd term1(fPoints.cols(), compTask.points.cols());
     apply_adjacent_circular(fPoints.colwise().begin(), fPoints.colwise().end(),
                             term1.rowwise().begin(),
                             [&](const Eigen::Ref<const Eigen::Array3d> &node1,
                                 const Eigen::Ref<const Eigen::Array3d> &node2) {
-                              return term(compTask.points.transpose(), node1,
-                                          node2);
+                              return term(compTask.points, node1, node2);
                             });
     ArrayXd inf = 1 / (4 * std::numbers::pi_v<double>)*(term1).colwise().sum();
     return inf;
@@ -67,5 +67,8 @@ struct DoubletP : IConstant3dSingularity<DoubletP> {
   static double calcSelfInfluenceImpl(const ComputeTask &compTask) {
     UNUSED(compTask);
     return -0.5;
+  }
+  static Eigen::ArrayXd calcInfluenceFarImpl(const ComputeTask &compTask) {
+    return DoubletFar::calcInfluenceImpl(compTask);
   }
 };

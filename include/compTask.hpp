@@ -3,6 +3,7 @@
 #include "evalPoints.hpp"
 #include "panel_geo/panel_geo.hpp"
 #include <Eigen/Core>
+#include <span>
 #include <vector>
 
 struct ComputeTask {
@@ -14,8 +15,8 @@ struct ComputeTask {
     double area;
   };
   Face face;
-  std::vector<std::size_t> indices;
-  Eigen::ArrayX3d points;
+  std::span<std::size_t> indices;
+  Eigen::Array3Xd points;
 };
 
 // Ctor
@@ -30,8 +31,7 @@ ComputeTask createInfluenceComputeTask(const PanelGeometry<Surface> &panelGeo,
   compTask.face.points = panelGeo.localFaceVertices[faceIdx];
 
   // Convert Points
-  compTask.indices = idx;
-  compTask.points = panelGeo.convertToLocal(
-      faceIdx, evalPoints.mEvalPoints(idx, Eigen::placeholders::all));
+  compTask.points =
+      panelGeo.convertToLocal(faceIdx, evalPoints.mEvalPoints.transpose());
   return compTask;
 }

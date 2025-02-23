@@ -1,4 +1,5 @@
 #pragma once
+#include "singularity/const_source_far.hpp"
 #include "singularity/iconst_sing.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
@@ -91,42 +92,42 @@ struct SourceP : IConstant3dSingularity<SourceP> {
     const Eigen::Array3Xd fPoints = compTask.face.points.transpose();
     using namespace Eigen;
 
-    ArrayXXd part1t1(fPoints.cols(), compTask.points.transpose().cols());
-    ArrayXXd part1t2(fPoints.cols(), compTask.points.transpose().cols());
-    ArrayXXd part2t(fPoints.cols(), compTask.points.transpose().cols());
+    ArrayXXd part1t1(fPoints.cols(), compTask.points.cols());
+    ArrayXXd part1t2(fPoints.cols(), compTask.points.cols());
+    ArrayXXd part2t(fPoints.cols(), compTask.points.cols());
 
     apply_adjacent_circular(fPoints.colwise().begin(), fPoints.colwise().end(),
                             part1t1.rowwise().begin(),
                             [&](const Eigen::Ref<const Eigen::Array3d> &node1,
                                 const Eigen::Ref<const Eigen::Array3d> &node2) {
-                              return part1term1(compTask.points.transpose(),
-                                                node1, node2);
+                              return part1term1(compTask.points, node1, node2);
                             });
 
     apply_adjacent_circular(fPoints.colwise().begin(), fPoints.colwise().end(),
                             part1t2.rowwise().begin(),
                             [&](const Eigen::Ref<const Eigen::Array3d> &node1,
                                 const Eigen::Ref<const Eigen::Array3d> &node2) {
-                              return part1term2(compTask.points.transpose(),
-                                                node1, node2);
+                              return part1term2(compTask.points, node1, node2);
                             });
 
     apply_adjacent_circular(fPoints.colwise().begin(), fPoints.colwise().end(),
                             part2t.rowwise().begin(),
                             [&](const Eigen::Ref<const Eigen::Array3d> &node1,
                                 const Eigen::Ref<const Eigen::Array3d> &node2) {
-                              return part2term(compTask.points.transpose(),
-                                               node1, node2);
+                              return part2term(compTask.points, node1, node2);
                             });
 
     ArrayXd term1 = (part1t1 * part1t2).colwise().sum();
-    ArrayXd term2 =
-        -compTask.points.col(2).abs() * (part2t.colwise().sum().transpose());
+    ArrayXd term2;
+    term2 = -compTask.points.row(2).abs() * (part2t.colwise().sum());
 
     return -1 / (4 * std::numbers::pi_v<double>)*(term1 + term2);
   }
 
   static double calcSelfInfluenceImpl(const ComputeTask &compTask) {
     return calcInfluenceImpl(compTask)(0);
+  }
+  static Eigen::ArrayXd calcInfluenceFarImpl(const ComputeTask &compTask) {
+    return SourceFar::calcInfluenceImpl(compTask);
   }
 };
