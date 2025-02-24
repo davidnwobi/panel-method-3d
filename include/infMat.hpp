@@ -16,9 +16,6 @@ makeInfluenceMatrix(int m, int n, const std::vector<ComputeTask> &compTaskVec) {
 #endif
   Eigen::ArrayXXd infMat(m, n);
   infMat.setZero();
-  auto sortable = compTaskVec[0].indices;
-  std::sort(sortable.begin(), sortable.end());
-  // PRINT_RANGE(sortable);
   for (auto i : RANGE(compTaskVec.size())) {
 
     infMat(compTaskVec[i].indices, i) =
@@ -30,7 +27,7 @@ makeInfluenceMatrix(int m, int n, const std::vector<ComputeTask> &compTaskVec) {
       temp.face = compTaskVec[i].face;
       temp.indices = {0};
       temp.points = (Eigen::ArrayX3d(1, 3) << 0, 0, 0).finished();
-      // infMat(i, i) = Singularity::calcSelfInfluence(temp);
+      infMat(i, i) = Singularity::calcSelfInfluence(temp);
     }
   }
   // print(infMat.topLeftCorner(10, 10));

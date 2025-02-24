@@ -16,7 +16,7 @@ Eigen::MatrixXd SourceDoubletSingle::assembleLhs() {
   std::size_t wakeDims = wakePanelCompTasks.size();
   Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
       evalDims, evalDims, surfacePanelCompTasks);
-  // std::cout << surfaceInfluenceMatrix.topLeftCorner(10, 10) << "\n";
+  print(surfaceInfluenceMatrix.topLeftCorner(20, 20)) << "\n";
   Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
       evalDims, wakeDims, wakePanelCompTasks);
 

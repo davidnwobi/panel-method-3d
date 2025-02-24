@@ -51,37 +51,36 @@ void rotate_points_about_start(Eigen::Ref<Eigen::ArrayX3d> points3d,
   points3d = points3d.rowwise() + original_loc.array(); // translate from origin
 }
 int main(int argc, char *argv[]) {
-  // ComputeTask cp;
-  // srand(42);
-  // cp.points.resize(1000, 3);
-  // cp.points.col(0) = Eigen::ArrayXd::LinSpaced(1000, -50, 50);
-  // cp.points.col(1) = Eigen::ArrayXd::Ones(1000) * 0;
-  // cp.points.col(2) = Eigen::ArrayXd::Ones(1000) * 0.01;
-  // cp.face.area = 1;
-  // cp.face.points = (Eigen::ArrayX3d(4, 3) << -0.5, -0.5, 1, 0.5, -0.5, 1,
-  // 0.5,
-  //                   0.5, 1, -0.5, 0.5, 1)
-  //                      .finished();
-  // cp.face.centrePoint = (Eigen::Array3d(3, 1) << 0, 0, 1).finished();
+  ComputeTask cp;
+  srand(42);
+  cp.points.resize(1000, 3);
+  cp.points.col(0) = Eigen::ArrayXd::LinSpaced(1000, -50, 50);
+  cp.points.col(1) = Eigen::ArrayXd::Ones(1000) * 0;
+  cp.points.col(2) = Eigen::ArrayXd::Ones(1000) * 0.01;
+  cp.face.area = 1;
+  cp.face.points = (Eigen::ArrayX3d(4, 3) << -0.5, -0.5, 1, 0.5, -0.5, 1, 0.5,
+                    0.5, 1, -0.5, 0.5, 1)
+                       .finished();
+  cp.face.centrePoint = (Eigen::Array3d(3, 1) << 0, 0, 1).finished();
   // // print(cp.points);
   // // print(cp.areas);
   // // print(cp.face.points);
   //
-  // FileReaderFactory::make_file_reader("dat", " ", true)
-  //     ->save_data(std::string(ANALYSIS_DIR) + "/doubletFar.dat",
-  //                 hMerge(cp.points, DoubletFar::calcInfluenceImpl(cp)));
-  //
-  // FileReaderFactory::make_file_reader("dat", " ", true)
-  //     ->save_data(std::string(ANALYSIS_DIR) + "/doubletP.dat",
-  //                 hMerge(cp.points, DoubletP::calcInfluenceImpl(cp)));
-  //
-  // FileReaderFactory::make_file_reader("dat", " ", true)
-  //     ->save_data(std::string(ANALYSIS_DIR) + "/sourceFar.dat",
-  //                 hMerge(cp.points, SourceFar::calcInfluenceImpl(cp)));
-  //
-  // FileReaderFactory::make_file_reader("dat", " ", true)
-  //     ->save_data(std::string(ANALYSIS_DIR) + "/sourceP.dat",
-  //                 hMerge(cp.points, SourceP::calcInfluenceImpl(cp)));
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/doubletFar.dat",
+                  hMerge(cp.points, DoubletFar::calcInfluenceImpl(cp)));
+
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/doubletP.dat",
+                  hMerge(cp.points, DoubletP::calcInfluenceImpl(cp)));
+
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/sourceFar.dat",
+                  hMerge(cp.points, SourceFar::calcInfluenceImpl(cp)));
+
+  FileReaderFactory::make_file_reader("dat", " ", true)
+      ->save_data(std::string(ANALYSIS_DIR) + "/sourceP.dat",
+                  hMerge(cp.points, SourceP::calcInfluenceImpl(cp)));
   namespace fs = std::filesystem;
 
   fs::path testDataLoc(std::string(SOURCE_DIR) + "/tests/test_data");

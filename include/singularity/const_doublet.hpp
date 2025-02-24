@@ -1,5 +1,6 @@
 #pragma once
 #include "compTask.hpp"
+#include "singularity/const_doublet_far.hpp"
 #include "singularity/iconst_sing.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
@@ -64,8 +65,12 @@ struct DoubletP : IConstant3dSingularity<DoubletP> {
     ArrayXd inf = 1 / (4 * std::numbers::pi_v<double>)*(term1).colwise().sum();
     return inf;
   }
+
+  static Eigen::ArrayXd calcInfluenceFarImpl(const ComputeTask &compTask) {
+    return DoubletFar::calcInfluenceImpl(compTask);
+  }
   static double calcSelfInfluenceImpl(const ComputeTask &compTask) {
     UNUSED(compTask);
-    return -0.5;
+    return 0.5;
   }
 };

@@ -21,8 +21,9 @@
 #include <vector>
 
 #define UNUSED(obj) (void)(obj);
-template <typename... Args> void print(Args &&...args) {
+template <typename... Args> std::ostream &print(Args &&...args) {
   (std::cout << ... << args) << "\n";
+  return std::cout;
 }
 
 template <typename T>

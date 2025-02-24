@@ -2,6 +2,7 @@
 #include "concepts.hpp"
 #include "evalPoints.hpp"
 #include "panel_geo/panel_geo.hpp"
+#include "utils/utils.hpp"
 #include <Eigen/Core>
 #include <vector>
 
@@ -19,6 +20,7 @@ struct ComputeTask {
 };
 
 // Ctor
+static int i = 0;
 template <SurfaceType Surface>
 ComputeTask createInfluenceComputeTask(const PanelGeometry<Surface> &panelGeo,
                                        EvalPoints<double> evalPoints,
@@ -33,5 +35,11 @@ ComputeTask createInfluenceComputeTask(const PanelGeometry<Surface> &panelGeo,
   compTask.indices = idx;
   compTask.points = panelGeo.convertToLocal(
       faceIdx, evalPoints.mEvalPoints(idx, Eigen::placeholders::all));
+  // print("centers ",
+  //(evalPoints.mEvalPoints(idx, Eigen::placeholders::all)).row(i).eval());
+  // print("Local XNormals", (panelGeo.tangentXVectors).row(i).eval());
+  // print("Local YNormals", (panelGeo.tangentYVectors).row(i).eval());
+  // print("Local Normals", (panelGeo.normalVectors).row(i++).eval());
+
   return compTask;
 }

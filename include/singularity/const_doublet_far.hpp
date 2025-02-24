@@ -15,6 +15,7 @@ struct DoubletFar : IConstant3dSingularity<DoubletFar> {
                                      .matrix()
                                      .colwise()
                                      .norm();
+    print(norms.topRows(11));
     return -compTask.face.centrePoint(2) * compTask.face.area /
            (4 * std::numbers::pi_v<double> * norms.pow(3));
   }

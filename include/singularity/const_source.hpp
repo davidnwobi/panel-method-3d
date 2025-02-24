@@ -1,4 +1,5 @@
 #pragma once
+#include "singularity/const_source_far.hpp"
 #include "singularity/iconst_sing.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
@@ -126,6 +127,9 @@ struct SourceP : IConstant3dSingularity<SourceP> {
     return -1 / (4 * std::numbers::pi_v<double>)*(term1 + term2);
   }
 
+  static Eigen::ArrayXd calcInfluenceFarImpl(const ComputeTask &compTask) {
+    return SourceFar::calcInfluenceImpl(compTask);
+  }
   static double calcSelfInfluenceImpl(const ComputeTask &compTask) {
     return calcInfluenceImpl(compTask)(0);
   }
