@@ -9,13 +9,13 @@
 struct DoubletFar : IConstant3dSingularity<DoubletFar> {
 
   static Eigen::ArrayXd calcInfluenceImpl(const ComputeTask &compTask) {
-    const Eigen::ArrayXd norms = (compTask.points.transpose() -
-                                  compTask.face.centrePoint.replicate(
-                                      1, compTask.points.transpose().cols()))
-                                     .matrix()
-                                     .colwise()
-                                     .norm();
-    return -compTask.face.centrePoint(2) * compTask.face.area /
+    const Eigen::ArrayXd norms =
+        (compTask.points - compTask.face.centrePoint.transpose().replicate(
+                               compTask.points.rows(), 1))
+            .matrix()
+            .rowwise()
+            .norm();
+    return -compTask.face.area * (compTask.points.col(2)) /
            (4 * std::numbers::pi_v<double> * norms.pow(3));
   }
 

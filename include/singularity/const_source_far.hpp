@@ -15,7 +15,7 @@ struct SourceFar : IConstant3dSingularity<SourceFar> {
                                      .matrix()
                                      .colwise()
                                      .norm();
-    return -compTask.face.area /
+    return compTask.face.area /
            (4 * std::numbers::pi_v<double> * norms).array();
   }
 

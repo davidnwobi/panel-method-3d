@@ -148,7 +148,6 @@ double PanelGeometry<T>::calcPolyArea(const Eigen::ArrayX3d &vertices) const {
                           [](const RowVector3d &v1, const RowVector3d &v2) {
                             return v1(0) * v2(1) - v1(1) * v2(0);
                           });
-
   return std::abs(0.5 * partAreaSum.sum());
 }
 

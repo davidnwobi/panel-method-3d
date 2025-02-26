@@ -9,6 +9,7 @@
 #include "utils/utils.hpp"
 #include <Eigen/Core>
 #include <algorithm>
+#include <stdexcept>
 
 Eigen::MatrixXd SourceDoubletSingle::assembleLhs() {
 
@@ -16,7 +17,7 @@ Eigen::MatrixXd SourceDoubletSingle::assembleLhs() {
   std::size_t wakeDims = wakePanelCompTasks.size();
   Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
       evalDims, evalDims, surfacePanelCompTasks);
-  print(surfaceInfluenceMatrix.topLeftCorner(20, 20)) << "\n";
+  // print(surfaceInfluenceMatrix.topLeftCorner(20, 20)) << "\n";
   Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
       evalDims, wakeDims, wakePanelCompTasks);
 

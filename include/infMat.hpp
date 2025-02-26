@@ -1,5 +1,6 @@
 #pragma once
 #include "compTask.hpp"
+#include "singularity/const_doublet.hpp"
 #include <Eigen/Core>
 #include <iostream>
 #include <ranges>
@@ -18,7 +19,6 @@ Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
   infMat.setZero();
 
   std::vector<std::size_t> partioned_indices(compTaskVec[0].points.rows());
-  std::iota(partioned_indices.begin(), partioned_indices.end(), 0);
   Eigen::ArrayXd norms(compTaskVec[0].points.rows());
   Eigen::ArrayXi isFarAway(norms.size());
   Eigen::ArrayXd solution;
@@ -40,6 +40,7 @@ Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
                     .select(Eigen::ArrayXi::Ones(norms.size()),
                             Eigen::ArrayXi::Zero(norms.size()));
 
+    std::iota(partioned_indices.begin(), partioned_indices.end(), 0);
     auto splitLoc = std::partition(
         partioned_indices.begin(), partioned_indices.end(),
         [&isFarAway](std::size_t idx) { return isFarAway[idx]; });
@@ -57,8 +58,14 @@ Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
     temp.points = compTaskVec[i].points(
         std::span<std::size_t>(splitLoc, partioned_indices.end()),
         Eigen::placeholders::all);
-    infMat(std::span<std::size_t>(splitLoc, partioned_indices.end()), i) =
-        Singularity::calcInfluenceFar(temp);
+
+    if constexpr (std::is_same_v<DoubletP, Singularity>) {
+      infMat(std::span<std::size_t>(splitLoc, partioned_indices.end()), i) =
+          Singularity::calcInfluenceFar(temp);
+    } else {
+      infMat(std::span<std::size_t>(splitLoc, partioned_indices.end()), i) =
+          Singularity::calcInfluenceFar(temp);
+    }
     // is this allocationg new memory
     if constexpr (SelfInfluence) {
       ComputeTask temp;
