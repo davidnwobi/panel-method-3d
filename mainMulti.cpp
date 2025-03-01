@@ -198,6 +198,7 @@ makeComputeTaskPairs(std::span<PanelGeometryPair> panelGeometries,
 }
 Eigen::MatrixXd assembleLhs(std::span<ComputeTask> surfacePanelCompTasks,
                             std::span<ComputeTask> wakePanelCompTasks,
+                            const PanelGeometry<WakePanel> &wakePanelGeo,
                             EvalPoints<double> &evalPoints) {
 
   std::size_t evalDims = evalPoints.mEvalPoints.rows();
@@ -210,15 +211,12 @@ Eigen::MatrixXd assembleLhs(std::span<ComputeTask> surfacePanelCompTasks,
 
   // combine source and wake
   for (std::size_t iWakeP = 0;
-       iWakeP < IPM::wakePanelRef.get().mSurface.mTrailingEdgeIdx.rows();
-       iWakeP++) {
+       iWakeP < wakePanelGeo.mSurface.mTrailingEdgeIdx.rows(); iWakeP++) {
 
     // NOTE: bad for cache?
 
-    int lowerFaceIdx =
-        IPM::wakePanelRef.get().mSurface.mTrailingEdgeIdx(iWakeP, 0);
-    int upperFaceIdx =
-        IPM::wakePanelRef.get().mSurface.mTrailingEdgeIdx(iWakeP, 1);
+    int lowerFaceIdx = wakePanelGeo.mSurface.mTrailingEdgeIdx(iWakeP, 0);
+    int upperFaceIdx = wakePanelGeo.mSurface.mTrailingEdgeIdx(iWakeP, 1);
     surfaceInfluenceMatrix(Eigen::placeholders::all, lowerFaceIdx) -=
         wakeInfluenceMatrix(Eigen::placeholders::all, iWakeP);
     surfaceInfluenceMatrix(Eigen::placeholders::all, upperFaceIdx) +=
