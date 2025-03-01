@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
   auto pset = readConvertedComponentsFromFile(filePath)[0];
   rotate_points_about_start(pset.wake.mPoints, aoa);
   PanelGeometry<SurfacePanel> body(pset.body);
-  PanelGeometry<SurfacePanel> wake(pset.wake);
+  PanelGeometry<WakePanel> wake(pset.wake);
 
   EvalPoints<double> evalPoints(body.centrePoints.rows());
   evalPoints.mEvalPoints = body.centrePoints;
@@ -98,12 +98,12 @@ int main(int argc, char *argv[]) {
     auto pset = readConvertedComponentsFromFile(filePath)[0];
     rotate_points_about_start(pset.wake.mPoints, aoa);
     PanelGeometry<SurfacePanel> body(pset.body);
-    PanelGeometry<SurfacePanel> wake(pset.wake);
+    PanelGeometry<WakePanel> wake(pset.wake);
 
     EvalPoints<double> evalPoints(body.centrePoints);
-    AeroCalcSingle calc(std::move(readConvertedComponentsFromFile(filePath)[0]),
-                        {10.0}, std::type_identity<SourceDoubletSingle>{},
-                        std::make_unique<SparseSolver>());
+    AeroResults calc(std::move(readConvertedComponentsFromFile(filePath)[0]),
+                     {10.0}, std::type_identity<SourceDoubletSingle>{},
+                     std::make_unique<SparseSolver>());
     calc.run({aoa, 1, 1});
     polars(i, 0) = calc.polars["aoa"];
     polars(i, 1) = calc.polars["CL"];

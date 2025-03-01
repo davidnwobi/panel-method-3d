@@ -61,7 +61,7 @@ target_link_libraries(mat_reader Eigen3::Eigen)
 
 
 # NOTE: Main
-add_executable (main main.cpp)
+add_executable (main mainMulti.cpp)
 target_link_libraries(main PUBLIC PanelMethods mat_reader )
 
 

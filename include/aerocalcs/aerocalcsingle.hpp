@@ -9,15 +9,15 @@
 #include <type_traits>
 #include <unordered_map>
 
-class AeroCalcSingle {
+struct FlowParams {
+  double aoa;
+  double rho;
+  double Vinf;
+};
+class AeroResults {
   PanelSet pSet;
 
 public:
-  struct FlowParams {
-    double aoa;
-    double rho;
-    double Vinf;
-  };
   struct ReferenceGeom {
     double refArea;
   };
@@ -29,20 +29,20 @@ public:
   AeroPanelResults panelResults;
   AeroSpanResults spanResults;
   AeroPolars polars;
-
+  FlowParams lastParams;
   template <typename ConcretePanelMethod>
-  AeroCalcSingle(PanelSet &&pSet, ReferenceGeom &&refGeom,
-                 std::type_identity<ConcretePanelMethod> &&,
-                 std::unique_ptr<ISolver> &&solver)
+  AeroResults(PanelSet &&pSet, ReferenceGeom &&refGeom,
+              std::type_identity<ConcretePanelMethod> &&,
+              std::unique_ptr<ISolver> &&solver)
       : pSet(pSet), refGeom(refGeom), surfacePanelGeo(pSet.body),
         wakePanelGeo(pSet.wake), evalPoints(surfacePanelGeo.centrePoints),
         pm(std::make_unique<ConcretePanelMethod>(surfacePanelGeo, wakePanelGeo,
                                                  evalPoints, std::move(solver),
                                                  0.0)) {}
+  AeroResults() = default;
   void run(FlowParams &&params);
 
 private:
-  FlowParams lastParams;
   PanelGeometry<SurfacePanel> surfacePanelGeo;
   PanelGeometry<WakePanel> wakePanelGeo;
   EvalPoints<double> evalPoints;

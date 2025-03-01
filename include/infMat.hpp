@@ -11,7 +11,7 @@ namespace views = std::views;
 typedef Array<bool, Dynamic, 1> ArrayXb;
 template <typename Singularity, bool SelfInfluence> // concept constrain
 Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
-                                    std::vector<ComputeTask> &compTaskVec) {
+                                    std::span<ComputeTask> compTaskVec) {
 #if (BENCHMARKING == 0)
   print(__PRETTY_FUNCTION__);
 #endif
@@ -48,23 +48,19 @@ Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
     temp.face = compTaskVec[i].face;
 
     // update tempTask with far points;
-    temp.points = compTaskVec[i].points(
-        std::span<std::size_t>(partioned_indices.begin(), splitLoc),
-        Eigen::placeholders::all);
-    infMat(std::span<std::size_t>(partioned_indices.begin(), splitLoc), i) =
-        Singularity::calcInfluence(temp);
+    auto nearIndex =
+        std::span<std::size_t>(partioned_indices.begin(), splitLoc);
+    temp.points = compTaskVec[i].points(nearIndex, Eigen::placeholders::all);
+    infMat(nearIndex, i) = Singularity::calcInfluence(temp);
 
     // update tempTask with far points;
-    temp.points = compTaskVec[i].points(
-        std::span<std::size_t>(splitLoc, partioned_indices.end()),
-        Eigen::placeholders::all);
+    auto farIndex = std::span<std::size_t>(splitLoc, partioned_indices.end());
+    temp.points = compTaskVec[i].points(farIndex, Eigen::placeholders::all);
 
     if constexpr (std::is_same_v<DoubletP, Singularity>) {
-      infMat(std::span<std::size_t>(splitLoc, partioned_indices.end()), i) =
-          Singularity::calcInfluenceFar(temp);
+      infMat(farIndex, i) = Singularity::calcInfluence(temp);
     } else {
-      infMat(std::span<std::size_t>(splitLoc, partioned_indices.end()), i) =
-          Singularity::calcInfluenceFar(temp);
+      infMat(farIndex, i) = Singularity::calcInfluence(temp);
     }
     // is this allocationg new memory
     if constexpr (SelfInfluence) {

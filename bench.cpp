@@ -56,9 +56,9 @@ double bench_panel_impl(int no_panels) {
   PanelGeometry<SurfacePanel> wake(pset.wake);
 
   EvalPoints<double> evalPoints(body.centrePoints);
-  AeroCalcSingle calc(std::move(readConvertedComponentsFromFile(filePath)[0]),
-                      {10.0}, std::type_identity<SourceDoubletSingle>{},
-                      std::make_unique<SparseSolver>());
+  AeroResults calc(std::move(readConvertedComponentsFromFile(filePath)[0]),
+                   {10.0}, std::type_identity<SourceDoubletSingle>{},
+                   std::make_unique<SparseSolver>());
   calc.run({aoa, 1, 1});
   return calc.polars["CL"];
 }

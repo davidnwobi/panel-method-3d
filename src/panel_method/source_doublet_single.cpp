@@ -137,25 +137,22 @@ SourceDoubletSingle::SourceDoubletSingle(
                    std::move(solver)) {
   IPM::setFlowParams(AoAd);
 }
-
+template <typename PanelGeo>
+auto makeComputeTasks(const PanelGeo &panelGeo,
+                      const EvalPoints<double> &evalPoints) {
+  int nPanels = panelGeo.centrePoints.rows();
+  auto faceIdxs = RANGE(nPanels);
+  return initialize_transform<std::vector<ComputeTask>>(
+      faceIdxs.begin(), faceIdxs.end(), [&](int faceIdx) {
+        return createInfluenceComputeTask(panelGeo, evalPoints, faceIdx);
+      });
+};
 void SourceDoubletSingle::run() {
-  std::vector<std::size_t> idxs(IPM::evalPointsRef.get().mEvalPoints.rows());
-  std::iota(idxs.begin(), idxs.end(), 0);
 
-  auto makeComputeTasks =
-      [this]<typename PanelGeo>(const PanelGeo &panelGeo,
-                                const std::vector<std::size_t> &idxs) {
-        int nPanels = panelGeo.centrePoints.rows();
-        auto faceIdxs = RANGE(nPanels);
-        return initialize_transform<std::vector<ComputeTask>>(
-            faceIdxs.begin(), faceIdxs.end(), [&](int faceIdx) {
-              return createInfluenceComputeTask(panelGeo, IPM::evalPointsRef,
-                                                faceIdx, idxs);
-            });
-      };
-
-  surfacePanelCompTasks = makeComputeTasks(IPM::surfacePanelRef.get(), idxs);
-  wakePanelCompTasks = makeComputeTasks(IPM::wakePanelRef.get(), idxs);
+  surfacePanelCompTasks =
+      makeComputeTasks(IPM::surfacePanelRef.get(), IPM::evalPointsRef);
+  wakePanelCompTasks =
+      makeComputeTasks(IPM::wakePanelRef.get(), IPM::evalPointsRef);
 
   IPM::solution = IPM::solver->solve(assembleLhs(), assembleRhs());
   IPM::velocities = calculatePanelVelocities();
