@@ -20,7 +20,6 @@ Eigen::MatrixXd SourceDoubletSingle::assembleLhs() {
   // print(surfaceInfluenceMatrix.topLeftCorner(20, 20)) << "\n";
   Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
       evalDims, wakeDims, wakePanelCompTasks);
-
   // combine source and wake
   for (std::size_t iWakeP = 0;
        iWakeP < IPM::wakePanelRef.get().mSurface.mTrailingEdgeIdx.rows();

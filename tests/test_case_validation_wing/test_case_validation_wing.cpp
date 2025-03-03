@@ -51,8 +51,8 @@ TEST(VALIDATION_WING, VALIDATION_WING) {
                       "/test_case_validation_wing/wakePanelInfo.txt");
   //  print();
   EXPECT_TRUE((wakePanelInfoComp - wakePanelInfo).isApproxToConstant(0));
-  AeroCalcSingle calc(std::move(readConvertedComponentsFromFile(filePath)[0]),
-                      {10.0}, std::make_unique<SparseSolver>());
+  AeroResults calc(std::move(readConvertedComponentsFromFile(filePath)[0]),
+                   {10.0}, std::make_unique<SparseSolver>());
 
   Eigen::ArrayX2d polars(n, 2);
   for (const auto i : std::ranges::views::iota(18, n)) {

@@ -42,11 +42,12 @@ public:
   AeroResults() = default;
   void run(FlowParams &&params);
 
+  std::unique_ptr<IPanelMethod> pm;
+
 private:
   PanelGeometry<SurfacePanel> surfacePanelGeo;
   PanelGeometry<WakePanel> wakePanelGeo;
   EvalPoints<double> evalPoints;
-  std::unique_ptr<IPanelMethod> pm;
 
   void post_process();
   void postProcessPanelResults();

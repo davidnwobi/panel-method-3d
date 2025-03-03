@@ -14,7 +14,6 @@ protected:
   std::reference_wrapper<const PanelGeometry<WakePanel>> wakePanelRef;
   std::reference_wrapper<const EvalPoints<double>> evalPointsRef;
   Eigen::RowVector3d freeStream;
-  Eigen::VectorXd solution;
   Eigen::ArrayX3d velocities;
   std::unique_ptr<ISolver> solver;
 
@@ -23,6 +22,7 @@ protected:
   virtual Eigen::MatrixXd calculatePanelVelocities() = 0;
 
 public:
+  Eigen::VectorXd solution;
   IPanelMethod(const PanelGeometry<SurfacePanel> &surfacePanelGeo,
                const PanelGeometry<WakePanel> &wakePanelGeo,
                const EvalPoints<double> &evalPoints,
@@ -31,7 +31,7 @@ public:
         evalPointsRef(evalPoints), solver(std::move(solver)) {}
 
   Eigen::ArrayX3d getComputedVelocites() const { return velocities; }
-  Eigen::VectorXd getSolution() const { return solution; }
+  Eigen::VectorXd &getSolution() { return solution; }
   Eigen::RowVector3d getfreeStream() const { return freeStream; }
   void setFlowParams(double AoAd) {
     double angleOfAttack = AoAd * M_PI / 180;

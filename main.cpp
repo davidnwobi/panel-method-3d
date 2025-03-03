@@ -64,8 +64,7 @@ int main(int argc, char *argv[]) {
 
   EvalPoints<double> evalPoints(body.centrePoints.rows());
   evalPoints.mEvalPoints = body.centrePoints;
-  ComputeTask cp = createInfluenceComputeTask(body, evalPoints, 0,
-                                              std::vector<std::size_t>{});
+  ComputeTask cp = createInfluenceComputeTask(body, evalPoints, 0);
 
   srand(42);
   print(cp.points);
@@ -93,7 +92,7 @@ int main(int argc, char *argv[]) {
 
   Eigen::ArrayX2d polars(n, 2);
   polars.setZero();
-  for (const auto i : std::ranges::views::iota(10, 11)) {
+  for (const auto i : std::ranges::views::iota(1, 2)) {
     double aoa = i;
     auto pset = readConvertedComponentsFromFile(filePath)[0];
     rotate_points_about_start(pset.wake.mPoints, aoa);
@@ -105,6 +104,8 @@ int main(int argc, char *argv[]) {
                      {10.0}, std::type_identity<SourceDoubletSingle>{},
                      std::make_unique<SparseSolver>());
     calc.run({aoa, 1, 1});
+    print(calc.pm.get()->solution.topRows(10));
+    print(calc.pm.get()->solution.topRows(10));
     polars(i, 0) = calc.polars["aoa"];
     polars(i, 1) = calc.polars["CL"];
     std::cout << polars << "\n";

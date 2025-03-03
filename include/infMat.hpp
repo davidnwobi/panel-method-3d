@@ -11,7 +11,7 @@ namespace views = std::views;
 typedef Array<bool, Dynamic, 1> ArrayXb;
 template <typename Singularity, bool SelfInfluence> // concept constrain
 Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
-                                    std::span<ComputeTask> compTaskVec) {
+                                    std::span<const ComputeTask> compTaskVec) {
 #if (BENCHMARKING == 0)
   print(__PRETTY_FUNCTION__);
 #endif

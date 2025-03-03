@@ -1,4 +1,5 @@
 ﻿#include "aerocalcs/aerocalcsingle.hpp"
+#include "central_difference.hpp"
 #include "compTask.hpp"
 #include "infMat.hpp"
 #include "panel_geo/panel_geo.hpp"
@@ -16,6 +17,7 @@
 #include <Eigen/Core>
 #include <algorithm>
 #include <filesystem>
+#include <iomanip>
 #include <iterator>
 #include <memory>
 #include <numeric>
@@ -146,39 +148,41 @@ create_eval_points(std::span<PanelGeometryPair> panelGeometries) {
 
   EvalPoints<double> evalPoints(totalEvalPoints);
   std::size_t iPoints = 0;
-  std::size_t bodyCount = 0;
-  while (iPoints < totalEvalPoints) {
-    evalPoints.mEvalPoints.middleRows(
-        iPoints, panelGeometries[bodyCount].first.centrePoints.rows()) =
-        panelGeometries[bodyCount].first.centrePoints;
-    iPoints += panelGeometries[bodyCount].first.centrePoints.rows();
-    bodyCount++;
-  }
+  auto pointsView = panelGeometries | std::views::transform([](auto const &g) {
+                      return g.first.centrePoints;
+                    });
+  std::ranges::for_each(pointsView, [&](auto const &pts) {
+    const auto rows = pts.rows();
+    evalPoints.mEvalPoints.middleRows(iPoints, rows) = pts;
+    iPoints += rows;
+  });
   return evalPoints;
 }
 ComputeTaskPair makeComputeTasksPairImpl(const PanelGeometryPair panelGeometry,
                                          const EvalPoints<double> &evalPoints) {
-  int nPanels = evalPoints.mEvalPoints.rows();
+  int surfPanels = panelGeometry.first.centrePoints.rows();
+  int wakePanels = panelGeometry.second.centrePoints.rows();
   auto surfaceComputeTaskView =
-      RANGE(nPanels) |
+      RANGE(surfPanels) |
       views::transform([&panelGeometry, &evalPoints](int faceIdx) {
         return createInfluenceComputeTask(panelGeometry.first, evalPoints,
                                           faceIdx);
       });
   auto wakeComputeTaskView =
-      RANGE(nPanels) |
+      RANGE(wakePanels) |
       views::transform([&panelGeometry, &evalPoints](int faceIdx) {
         return createInfluenceComputeTask(panelGeometry.second, evalPoints,
                                           faceIdx);
       });
 
   ComputeTaskPair compTaskPair;
-  compTaskPair.first.reserve(nPanels);
-  compTaskPair.second.reserve(nPanels);
+  compTaskPair.first.reserve(surfPanels);
+  compTaskPair.second.reserve(wakePanels);
   std::ranges::copy(surfaceComputeTaskView,
                     std::back_inserter(compTaskPair.first));
   std::ranges::copy(wakeComputeTaskView,
                     std::back_inserter(compTaskPair.second));
+  print("Wake Tasks, ", wakeComputeTaskView.size());
   return compTaskPair;
 };
 std::vector<ComputeTaskPair>
@@ -196,15 +200,17 @@ makeComputeTaskPairs(std::span<PanelGeometryPair> panelGeometries,
   std::ranges::copy(pairs, std::back_inserter(compTaskPairs));
   return compTaskPairs;
 }
-Eigen::MatrixXd assembleLhs(std::span<ComputeTask> surfacePanelCompTasks,
-                            std::span<ComputeTask> wakePanelCompTasks,
-                            const PanelGeometry<WakePanel> &wakePanelGeo,
-                            EvalPoints<double> &evalPoints) {
+Eigen::MatrixXd
+assembleLhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
+                std::span<const ComputeTask> wakePanelCompTasks,
+                const PanelGeometry<WakePanel> &wakePanelGeo,
+                const EvalPoints<double> &evalPoints) {
 
   std::size_t evalDims = evalPoints.mEvalPoints.rows();
+  std::size_t surfDims = surfacePanelCompTasks.size();
   std::size_t wakeDims = wakePanelCompTasks.size();
   Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
-      evalDims, evalDims, surfacePanelCompTasks);
+      evalDims, surfDims, surfacePanelCompTasks);
   // print(surfaceInfluenceMatrix.topLeftCorner(20, 20)) << "\n";
   Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
       evalDims, wakeDims, wakePanelCompTasks);
@@ -222,27 +228,164 @@ Eigen::MatrixXd assembleLhs(std::span<ComputeTask> surfacePanelCompTasks,
     surfaceInfluenceMatrix(Eigen::placeholders::all, upperFaceIdx) +=
         wakeInfluenceMatrix(Eigen::placeholders::all, iWakeP);
   }
-
   return surfaceInfluenceMatrix;
 }
+
+Eigen::MatrixXd assembleLhs(std::span<const ComputeTaskPair> compTaskPairs,
+                            std::span<const PanelGeometryPair> panelGeometries,
+                            const EvalPoints<double> &evalPoints) {
+
+  auto lhsView =
+      RANGE(compTaskPairs.size()) | views::transform([&](std::size_t idx) {
+        return assembleLhsImpl(compTaskPairs[idx].first,
+                               compTaskPairs[idx].second,
+                               panelGeometries[idx].second, evalPoints);
+      });
+
+  std::size_t mDims = evalPoints.mEvalPoints.rows();
+  Eigen::MatrixXd lhs(mDims, mDims);
+  std::size_t iPoints = 0;
+  std::ranges::for_each(lhsView, [&](const Eigen::Ref<const MatrixXd> &pts) {
+    const auto cols = pts.cols();
+    lhs.middleCols(iPoints, cols) = pts;
+    iPoints += cols;
+  });
+  return lhs;
+}
+
+std::pair<Eigen::VectorXd, Eigen::VectorXd>
+assembleRhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
+                const PanelGeometry<SurfacePanel> &surfacePanelGeo,
+                const EvalPoints<double> &evalPoints,
+                const Eigen::Ref<Eigen::Array3d> &freeStream) {
+
+  std::size_t evalDims = evalPoints.mEvalPoints.rows();
+  std::size_t surfDims = surfacePanelCompTasks.size();
+  Eigen::MatrixXd sourceInfluenceMat = makeInfluenceMatrix<SourceP, true>(
+      evalDims, surfDims, surfacePanelCompTasks);
+  Eigen::VectorXd sourceStrength =
+      rowwiseDotProduct(surfacePanelGeo.normalVectors, freeStream);
+  return {-(sourceInfluenceMat * sourceStrength), sourceStrength};
+}
+
+std::pair<Eigen::VectorXd, VectorXd>
+assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
+            std::span<const PanelGeometryPair> panelGeometries,
+            const EvalPoints<double> &evalPoints,
+            const Eigen::Ref<Eigen::Array3d> &freeStream) {
+
+  auto rhsView =
+      RANGE(compTaskPairs.size()) | views::transform([&](std::size_t idx) {
+        return assembleRhsImpl(compTaskPairs[idx].first,
+                               panelGeometries[idx].first, evalPoints,
+                               freeStream);
+      });
+
+  std::size_t mDims = evalPoints.mEvalPoints.rows();
+  Eigen::VectorXd rhs(mDims);
+  Eigen::VectorXd sourceStrength(mDims);
+  std::size_t iPoints = 0;
+  std::ranges::for_each(rhsView, [&](const auto &pts) {
+    const auto rows = pts.first.rows();
+    rhs.middleRows(iPoints, rows) = pts.first;
+    sourceStrength.middleRows(iPoints, rows) = pts.second;
+    iPoints += rows;
+  });
+  return {rhs, sourceStrength};
+}
+Eigen::MatrixXd
+calculatePanelVelocities(const PanelGeometryPair &panelGeometryPair,
+                         const Eigen::Ref<Eigen::ArrayXd> &doubletStrength,
+                         const Eigen::Ref<Eigen::ArrayXd> &sourceStrength,
+                         const Eigen::Ref<Eigen::ArrayXd> &freeStream) {
+  auto &panel = panelGeometryPair.first;
+  std::size_t nYSecs = panel.mSurface.nYsecs;
+  std::size_t nXsecs = panel.mSurface.nXsecs;
+
+  // Is this being reshaped properly? yes
+
+  // Convert points to panel coordinate surface chord-wise from trailing edge
+  // bottom to trailing edge top
+  // is solution solved  in the same order>	depends on if face has the same
+  // order, yes compute task <- centerpoints <- face
+
+  // 1): Convert the centrepoints to panel reference frame
+  Eigen::ArrayXXd xPoints(nXsecs, nYSecs);
+  xPoints.setZero();
+  for (int iY = 0; iY < nYSecs; iY++) {
+    for (int iX = 1; iX < nXsecs; iX++) {
+      xPoints(iX, iY) = (panel.centrePoints.row(iX + iY * nXsecs) -
+                         panel.centrePoints.row((iX - 1) + iY * nXsecs))
+                            .matrix()
+                            .norm() +
+                        xPoints(iX - 1, iY);
+    }
+  }
+  Eigen::ArrayXXd yPoints(nXsecs, nYSecs);
+  yPoints.setZero();
+  for (int iX = 0; iX < nXsecs; iX++) {
+    for (int iY = 1; iY < nYSecs; iY++) {
+      yPoints(iX, iY) = (panel.centrePoints.row(iX + iY * nXsecs) -
+                         panel.centrePoints.row(iX + (iY - 1) * nXsecs))
+                            .matrix()
+                            .norm() +
+                        yPoints(iX, iY - 1);
+    }
+  }
+  Eigen::ArrayXXd zPoints = panel.centrePoints.col(2).reshaped(nXsecs, nYSecs);
+
+  // 2:) u = -d(mu)/d(x_l); v = -d(mu)/d(y_l); w = sigma
+  Eigen::ArrayXXd fPoints(nXsecs, nYSecs);
+  fPoints << doubletStrength.reshaped(nXsecs, nYSecs); // no minus
+
+  Eigen::ArrayX3d inducedVelocities(nXsecs * nYSecs, 3);
+  inducedVelocities << -centralDifference<true>(xPoints, fPoints).reshaped(),
+      -centralDifference<false>(yPoints, fPoints).reshaped(), -sourceStrength;
+
+  Eigen::ArrayX3d globalVelocites(nXsecs * nYSecs, 3);
+
+  globalVelocites << rowwiseDotProduct(panel.tangentXVectors, freeStream),
+      rowwiseDotProduct(panel.tangentYVectors, freeStream),
+      rowwiseDotProduct(panel.normalVectors, freeStream);
+
+  xPoints = panel.centrePoints.col(0).reshaped(nXsecs, nYSecs);
+
+  return globalVelocites + inducedVelocities;
+}
+
 int main(int argc, char *argv[]) {
   namespace fs = std::filesystem;
   fs::path testDataLoc(std::string(SOURCE_DIR) + "/tests/test_data");
   fs::path filePath(testDataLoc.string() + "/0012_10000.txt");
 
-  double aoa = 10;
+  double aoa = 1.0;
+  double angleOfAttack = aoa * M_PI / 180;
+  Eigen::Array3d freeStream = {std::cos(angleOfAttack), 0,
+                               std::sin(angleOfAttack)};
+  print(freeStream);
   auto pset = readConvertedComponentsFromFile(filePath);
   align_wake_to_flow(pset, aoa);
   auto panelGeometries = calc_panel_geometry(pset);
   auto evalPoints = create_eval_points(panelGeometries);
+  auto compTaskPairs = makeComputeTaskPairs(panelGeometries, evalPoints);
+  auto out =
+      assembleRhs(compTaskPairs, panelGeometries, evalPoints, freeStream);
+  Eigen::VectorXd sourceStrength = std::move(out.second);
+  Eigen::VectorXd rhs = std::move(out.first);
+  Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
+  Eigen::ArrayXd doubletStrength = SparseSolver().solve(lhs, rhs);
+
   SourceDoubletSingle panelMethod(panelGeometries[0].first,
                                   panelGeometries[0].second, evalPoints,
-                                  std::make_unique<SparseSolver>(), 10.0);
+                                  std::make_unique<SparseSolver>(), aoa);
   panelMethod.setFlowParams(aoa);
   panelMethod.run();
-  auto calc =
-      post_process_body(panelGeometries[0].first,
-                        panelMethod.getComputedVelocites(), {10.0, 1, 1}, 10);
+
+  auto calc = post_process_body(
+      panelGeometries[0].first,
+      calculatePanelVelocities(panelGeometries[0], doubletStrength,
+                               sourceStrength, freeStream),
+      {aoa, 1, 1}, aoa);
   std::cout << "aoa: " << calc.polars["aoa"] << " CL: " << calc.polars["CL"]
             << "\n";
 

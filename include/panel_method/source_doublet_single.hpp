@@ -9,7 +9,6 @@ class SourceDoubletSingle : public IPanelMethod {
   using IPM = IPanelMethod;
 
 private:
-  Eigen::VectorXd sourceStrength;
   std::vector<ComputeTask> surfacePanelCompTasks;
   std::vector<ComputeTask> wakePanelCompTasks;
 
@@ -19,6 +18,7 @@ protected:
   Eigen::MatrixXd calculatePanelVelocities() override;
 
 public:
+  Eigen::VectorXd sourceStrength;
   SourceDoubletSingle(const PanelGeometry<SurfacePanel> &surfacePanelGeo,
                       const PanelGeometry<WakePanel> &wakePanelGeo,
                       const EvalPoints<double> &evalPoints,
