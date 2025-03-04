@@ -9,8 +9,8 @@
 #include <utility>
 #include <vector>
 
-std::vector<std::string> split(const std::string &line,
-                               const std::string &delimiter) {
+std::vector<std::string> splitMatLine(const std::string &line,
+                                      const std::string &delimiter) {
   std::vector<std::string> result;
   std::string token;
   std::istringstream tokenStream(line);
@@ -62,14 +62,14 @@ TableData read_table_data(const std::filesystem::path &file_loc,
   // deduce no of cols
   TableData::SerialData data;
   getline(file, line);
-  std::vector<std::string> nums = split(line, delim);
+  std::vector<std::string> nums = splitMatLine(line, delim);
   std::transform(nums.begin(), nums.end(), std::back_inserter(data),
                  [](const std::string &s) { return std::stod(s); });
   std::size_t n_cols = nums.size();
   std::size_t n_rows = 1;
   while (getline(file, line)) {
 
-    std::vector<std::string> nums = split(line, delim);
+    std::vector<std::string> nums = splitMatLine(line, delim);
     std::transform(nums.begin(), nums.end(), std::back_inserter(data),
                    [](const std::string &s) { return std::stod(s); });
     n_rows++;

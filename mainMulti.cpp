@@ -17,6 +17,8 @@
 #include "utils/utils.hpp"
 #include <Eigen/Core>
 #include <algorithm>
+#include <cmath>
+#include <concepts>
 #include <filesystem>
 #include <iomanip>
 #include <iterator>
@@ -305,19 +307,51 @@ ComputeTaskPair makeComputeTasksPairImpl(const PanelGeometryPair panelGeometry,
   print("Wake Tasks, ", wakeComputeTaskView.size());
   return compTaskPair;
 };
+
+auto makeChunkData(const auto &panelGeometry) {
+
+  auto chunkSize = panelGeometry | views::transform([](const auto &pg) {
+                     return pg.centrePoints.rows();
+                   });
+  std::vector<size_t> chunkStart(chunkSize.size(), 0);
+  std::exclusive_scan(chunkSize.begin(), chunkSize.end(), chunkStart.begin(),
+                      0);
+  return std::pair{chunkStart, chunkSize};
+}
 std::vector<ComputeTaskPair>
 makeComputeTaskPairs(std::span<PanelGeometryPair> panelGeometries,
                      const EvalPoints<double> &evalPoints) {
 
   int nBodies = panelGeometries.size();
+
   auto pairs =
       RANGE(nBodies) |
       views::transform([&panelGeometries, &evalPoints](int iBody) {
         return makeComputeTasksPairImpl(panelGeometries[iBody], evalPoints);
       });
+
   std::vector<ComputeTaskPair> compTaskPairs;
   compTaskPairs.reserve(nBodies);
   std::ranges::copy(pairs, std::back_inserter(compTaskPairs));
+
+  // Generate correct faceIdx for both surfaces for 0 to the total number of
+  // panels
+  auto [surfChunkStart, surfChunkSize] =
+      makeChunkData(panelGeometries | views::transform([](const auto &pgPair) {
+                      return pgPair.first;
+                    }));
+  auto surfFaceIdxView =
+      RANGE(nBodies) | views::transform([&](auto idx) {
+        return views::iota(surfChunkStart[idx],
+                           surfChunkStart[idx] + surfChunkSize[idx]);
+      });
+
+  for (auto i : RANGE(nBodies)) {
+    for (auto j : RANGE(compTaskPairs[i].first.size())) {
+      compTaskPairs[i].first[j].face.faceIdx = surfFaceIdxView[i][j];
+      print(surfFaceIdxView[i][j]);
+    }
+  }
   return compTaskPairs;
 }
 Eigen::MatrixXd
@@ -329,6 +363,8 @@ assembleLhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
   std::size_t evalDims = evalPoints.mEvalPoints.rows();
   std::size_t surfDims = surfacePanelCompTasks.size();
   std::size_t wakeDims = wakePanelCompTasks.size();
+  print("Eval Dims: ", evalDims, "Surf Dims: ", surfDims,
+        "Wake Dims: ", wakeDims);
   Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
       evalDims, surfDims, surfacePanelCompTasks);
   // print(surfaceInfluenceMatrix.topLeftCorner(20, 20)) << "\n";
@@ -370,6 +406,7 @@ Eigen::MatrixXd assembleLhs(std::span<const ComputeTaskPair> compTaskPairs,
     lhs.middleCols(iPoints, cols) = pts;
     iPoints += cols;
   });
+  savetxt("lhs.txt", lhs);
   return lhs;
 }
 
@@ -403,11 +440,12 @@ assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
 
   std::size_t mDims = evalPoints.mEvalPoints.rows();
   Eigen::VectorXd rhs(mDims);
+  rhs.setZero();
   Eigen::VectorXd sourceStrength(mDims);
   std::size_t iPoints = 0;
   std::ranges::for_each(rhsView, [&](const auto &pts) {
-    const auto rows = pts.first.rows();
-    rhs.middleRows(iPoints, rows) = pts.first;
+    rhs += pts.first;
+    const auto rows = pts.second.rows();
     sourceStrength.middleRows(iPoints, rows) = pts.second;
     iPoints += rows;
   });
@@ -459,6 +497,58 @@ auto parse_param(const fs::path &fpath) {
   pFile.close();
   return std::make_pair(flowParams, refGeom);
 }
+auto parse_param_batch(const fs::path &fpath) {
+  std::ifstream pFile(fpath);
+  if (!pFile.is_open()) {
+    std::cerr << "Error opening params file: " << fpath.string() << std::endl;
+  }
+  std::vector<FlowParams> flowParams;
+  ReferenceGeom refGeom = {0};
+  bool haveaoa = false;
+  bool haveS = false;
+  std::string line;
+
+  while (std::getline(pFile, line)) {
+    // Remove anything after "//"
+    std::size_t pos = line.find("//");
+    if (pos != std::string::npos) {
+      line = line.substr(0, pos);
+    }
+
+    // Trim leading/trailing whitespace (simple approach)
+    // You can write a more robust trim if needed.
+    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+      line.erase(line.begin());
+    }
+    while (!line.empty() && (line.back() == ' ' || line.back() == '\t')) {
+      line.pop_back();
+    }
+
+    // Skip empty lines or lines that begin with '#'
+    if (line.empty() || line[0] == '#') {
+      continue;
+    }
+
+    // First valid numeric line -> aoa, second -> S
+    if (!haveaoa) {
+      auto aoaS = split(line, " ");
+      std::ranges::copy(
+          aoaS | views::transform([](const std::string &aoa) -> double {
+            return std::atof(aoa.c_str());
+          }) | views::transform([](const auto &val) -> FlowParams {
+            return {val, 1, 1};
+          }),
+          std::back_inserter(flowParams));
+      haveaoa = true;
+    } else if (!haveS) {
+      refGeom.refArea = std::atof(line.c_str());
+      haveS = true;
+    }
+  }
+
+  pFile.close();
+  return std::make_pair(flowParams, refGeom);
+}
 void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
                    AeroResults &results) {
 
@@ -476,27 +566,9 @@ void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
               .finished(),
           " ", headers);
 }
-int main(int argc, char *argv[]) {
-  std::string inputFile;
-  std::string outputFile;
-  std::string paramsFile;
+void run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
+                  const std::string &inputFile, const std::string &outputFile) {
 
-  for (int i = 1; i < argc; ++i) {
-    std::string arg = argv[i];
-    if ((arg == "-i") && (i + 1 < argc)) {
-      inputFile = argv[++i];
-    } else if ((arg == "-o") && (i + 1 < argc)) {
-      outputFile = argv[++i];
-    } else if ((arg == "-p") && (i + 1 < argc)) {
-      paramsFile = argv[++i];
-    }
-  }
-  if (inputFile.empty() || outputFile.empty() || paramsFile.empty()) {
-    std::cerr << "Usage: " << argv[0]
-              << " -i <input_file> -o <output_file> -p <params_file>\n";
-    return 1;
-  }
-  auto [flowParams, refGeom] = parse_param(paramsFile);
   Eigen::Array3d freeStream = getFreeStream(flowParams.aoa, 1);
   auto pset = readConvertedComponentsFromFile(inputFile);
   align_wake_to_flow(pset, flowParams.aoa);
@@ -512,10 +584,50 @@ int main(int argc, char *argv[]) {
 
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
-  print("CL: ", results[0].polars["CL"]);
-  int i = 1;
-  std::string outfile = outputFile + "/bodydata_S" + std::to_string(i) +
-                        "_aoa" + std::to_string(flowParams.aoa) + ".dat";
-  writeBodyData(outfile, panelGeometries[0], results[0]);
+  for (auto i : RANGE(results.size())) {
+    print("CL: ", results[i].polars["CL"]);
+    std::string outfile = outputFile + "/bodydata_S" + std::to_string(i) +
+                          "_aoa" + std::to_string((int)flowParams.aoa) + ".dat";
+    writeBodyData(outfile, panelGeometries[i], results[i]);
+  }
+}
+int main(int argc, char *argv[]) {
+  std::string inputFile;
+  std::string outputFile;
+  std::string paramsFile;
+  bool batchAoa = false;
+
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if ((arg == "-i") && (i + 1 < argc)) {
+      inputFile = argv[++i];
+    } else if ((arg == "-o") && (i + 1 < argc)) {
+      outputFile = argv[++i];
+    } else if ((arg == "-p") && (i + 1 < argc)) {
+      paramsFile = argv[++i];
+    } else if ((arg == "-b") && (i < argc)) {
+      batchAoa = true;
+    }
+  }
+  if (inputFile.empty() || outputFile.empty() || paramsFile.empty()) {
+    std::cerr << "Usage: " << argv[0]
+              << " -i <input_file> -o <output_file> -p <params_file>\n";
+    return 1;
+  }
+  if (!batchAoa) {
+    auto [flowParams, refGeom] = parse_param(paramsFile);
+    run_analysis(flowParams, refGeom, inputFile, outputFile);
+  } else {
+    print("Here");
+    auto [flowParams, refGeom] = parse_param_batch(paramsFile);
+    std::ranges::copy(flowParams | views::transform([](const auto &flowParams) {
+                        return flowParams.aoa;
+                      }),
+                      std::ostream_iterator<double>(std::cout, " "));
+    std::ranges::for_each(flowParams, [&](const auto &flowParams) {
+      run_analysis(flowParams, refGeom, inputFile, outputFile);
+    });
+  }
+
   return 0;
 }
