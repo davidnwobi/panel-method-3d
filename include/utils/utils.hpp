@@ -14,6 +14,7 @@
 #include <iterator>
 #include <memory>
 #include <numeric>
+#include <ranges>
 #include <sstream>
 #include <stdexcept>
 #include <string>

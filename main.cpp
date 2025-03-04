@@ -67,9 +67,6 @@ int main(int argc, char *argv[]) {
   ComputeTask cp = createInfluenceComputeTask(body, evalPoints, 0);
 
   srand(42);
-  print(cp.points);
-  print(cp.face.area);
-  print(cp.face.points);
   //
   FileReaderFactory::make_file_reader("dat", " ", true)
       ->save_data(
@@ -105,7 +102,9 @@ int main(int argc, char *argv[]) {
                      std::make_unique<SparseSolver>());
     calc.run({aoa, 1, 1});
     print(calc.pm.get()->solution.topRows(10));
-    print(calc.pm.get()->solution.topRows(10));
+    print("\n");
+    print(static_cast<SourceDoubletSingle *>(calc.pm.get())
+              ->sourceStrength.topRows(10));
     polars(i, 0) = calc.polars["aoa"];
     polars(i, 1) = calc.polars["CL"];
     std::cout << polars << "\n";

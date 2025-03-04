@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 project(Inviscid3d VERSION 0.6 LANGUAGES C CXX)  
 # project specific logic here.
 
-set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD 23)
 set (CMAKE_CXX_STANDARD_REQUIRED True)
 set (CMAKE_EXPORT_COMPILE_COMMANDS on)
 cmake_policy(SET CMP0135 NEW)
@@ -66,7 +66,7 @@ target_link_libraries(main PUBLIC PanelMethods mat_reader )
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET main PROPERTY CXX_STANDARD 20)
+  set_property(TARGET main PROPERTY CXX_STANDARD 23)
 endif()
 
 add_executable (mainM mainMulti.cpp)
@@ -74,7 +74,7 @@ target_link_libraries(mainM PUBLIC PanelMethods mat_reader )
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET mainM PROPERTY CXX_STANDARD 20)
+  set_property(TARGET mainM PROPERTY CXX_STANDARD 23)
 endif()
 
 # NOTE: BENCHMARKING

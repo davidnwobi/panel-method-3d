@@ -14,13 +14,13 @@ struct FlowParams {
   double rho;
   double Vinf;
 };
+struct ReferenceGeom {
+  double refArea;
+};
 class AeroResults {
   PanelSet pSet;
 
 public:
-  struct ReferenceGeom {
-    double refArea;
-  };
   using AeroPanelResults = std::unordered_map<std::string, Eigen::ArrayXd>;
   using AeroSpanResults = std::unordered_map<std::string, Eigen::ArrayXd>;
   using AeroPolars = std::unordered_map<std::string, double>;
