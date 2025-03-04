@@ -69,7 +69,6 @@ Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
       temp.indices = {0};
       temp.points = (Eigen::ArrayX3d(1, 3) << 0, 0, 0).finished();
       infMat(temp.face.faceIdx, i) = Singularity::calcSelfInfluence(temp);
-      print("Set for IDX: ", temp.face.faceIdx);
     }
     std::iota(partioned_indices.begin(), partioned_indices.end(), 0);
   }

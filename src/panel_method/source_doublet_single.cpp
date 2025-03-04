@@ -1,6 +1,7 @@
 #include "panel_method/source_doublet_single.hpp"
 #include "central_difference.hpp"
 #include "infMat.hpp"
+#include "mat_reader/mat_reader.hpp"
 #include "panel_method/ipanel.hpp"
 #include "singularity/const_doublet.hpp"
 #include "singularity/const_source.hpp"

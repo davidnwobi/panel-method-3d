@@ -202,8 +202,6 @@ Eigen::ArrayXXd calculatePanelVelocities(
       rowwiseDotProduct(panel.tangentYVectors, freeStream),
       rowwiseDotProduct(panel.normalVectors, freeStream);
 
-  xPoints = panel.centrePoints.col(0).reshaped(nXsecs, nYSecs);
-
   return globalVelocites + inducedVelocities;
 }
 
@@ -349,7 +347,6 @@ makeComputeTaskPairs(std::span<PanelGeometryPair> panelGeometries,
   for (auto i : RANGE(nBodies)) {
     for (auto j : RANGE(compTaskPairs[i].first.size())) {
       compTaskPairs[i].first[j].face.faceIdx = surfFaceIdxView[i][j];
-      print(surfFaceIdxView[i][j]);
     }
   }
   return compTaskPairs;
@@ -406,7 +403,6 @@ Eigen::MatrixXd assembleLhs(std::span<const ComputeTaskPair> compTaskPairs,
     lhs.middleCols(iPoints, cols) = pts;
     iPoints += cols;
   });
-  savetxt("lhs.txt", lhs);
   return lhs;
 }
 
@@ -425,7 +421,7 @@ assembleRhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
   return {-(sourceInfluenceMat * sourceStrength), sourceStrength};
 }
 
-std::pair<Eigen::VectorXd, VectorXd>
+std::pair<Eigen::VectorXd, Eigen::VectorXd>
 assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
             std::span<const PanelGeometryPair> panelGeometries,
             const EvalPoints<double> &evalPoints,
@@ -440,6 +436,7 @@ assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
 
   std::size_t mDims = evalPoints.mEvalPoints.rows();
   Eigen::VectorXd rhs(mDims);
+
   rhs.setZero();
   Eigen::VectorXd sourceStrength(mDims);
   std::size_t iPoints = 0;
@@ -566,7 +563,13 @@ void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
               .finished(),
           " ", headers);
 }
-void run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
+template <typename R>
+concept constant_AeroResults_range =
+    std::ranges::constant_range<R> && std::is_same_v<R, AeroResults>;
+void accumularPolars(constant_AeroResults_range auto R) {
+  Eigen::ArrayXXd polars(R.size(), 1);
+};
+auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
                   const std::string &inputFile, const std::string &outputFile) {
 
   Eigen::Array3d freeStream = getFreeStream(flowParams.aoa, 1);
@@ -585,11 +588,11 @@ void run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
   for (auto i : RANGE(results.size())) {
-    print("CL: ", results[i].polars["CL"]);
     std::string outfile = outputFile + "/bodydata_S" + std::to_string(i) +
                           "_aoa" + std::to_string((int)flowParams.aoa) + ".dat";
     writeBodyData(outfile, panelGeometries[i], results[i]);
   }
+  return results;
 }
 int main(int argc, char *argv[]) {
   std::string inputFile;
@@ -618,15 +621,15 @@ int main(int argc, char *argv[]) {
     auto [flowParams, refGeom] = parse_param(paramsFile);
     run_analysis(flowParams, refGeom, inputFile, outputFile);
   } else {
-    print("Here");
     auto [flowParams, refGeom] = parse_param_batch(paramsFile);
     std::ranges::copy(flowParams | views::transform([](const auto &flowParams) {
                         return flowParams.aoa;
                       }),
                       std::ostream_iterator<double>(std::cout, " "));
-    std::ranges::for_each(flowParams, [&](const auto &flowParams) {
-      run_analysis(flowParams, refGeom, inputFile, outputFile);
-    });
+    auto results =
+        flowParams | views::transform([&](const auto &flowParams) {
+          return run_analysis(flowParams, refGeom, inputFile, outputFile);
+        });
   }
 
   return 0;
