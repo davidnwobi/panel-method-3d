@@ -30,19 +30,22 @@ public:
   AeroSpanResults spanResults;
   AeroPolars polars;
   FlowParams lastParams;
+
   template <typename ConcretePanelMethod>
   AeroResults(PanelSet &&pSet, ReferenceGeom &&refGeom,
               std::type_identity<ConcretePanelMethod> &&,
               std::unique_ptr<ISolver> &&solver)
       : pSet(pSet), refGeom(refGeom), surfacePanelGeo(pSet.body),
         wakePanelGeo(pSet.wake), evalPoints(surfacePanelGeo.centrePoints),
-        pm(std::make_unique<ConcretePanelMethod>(surfacePanelGeo, wakePanelGeo,
+        pm(std::make_shared<ConcretePanelMethod>(surfacePanelGeo, wakePanelGeo,
                                                  evalPoints, std::move(solver),
                                                  0.0)) {}
   AeroResults() = default;
+  AeroResults(const AeroResults &result) = default;
+
   void run(FlowParams &&params);
 
-  std::unique_ptr<IPanelMethod> pm;
+  std::shared_ptr<IPanelMethod> pm;
 
 private:
   PanelGeometry<SurfacePanel> surfacePanelGeo;

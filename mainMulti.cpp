@@ -2,6 +2,7 @@
 #include "central_difference.hpp"
 #include "compTask.hpp"
 #include "infMat.hpp"
+#include "mat_reader/mat_reader.hpp"
 #include "panel_geo/panel_geo.hpp"
 #include "panel_method/source_doublet_single.hpp"
 #include "singularity/const_doublet.hpp"
@@ -29,6 +30,7 @@
 #include <vector>
 // #define RANGE(n) views::iota(0, (int)n)
 //
+namespace fs = std::filesystem;
 Eigen::Array3d getFreeStream(double aoa, double Vinf) {
 
   double angleOfAttack = aoa * M_PI / 180;
@@ -411,18 +413,93 @@ assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
   });
   return {rhs, sourceStrength};
 }
+auto parse_param(const fs::path &fpath) {
+  std::ifstream pFile(fpath);
+  if (!pFile.is_open()) {
+    std::cerr << "Error opening params file: " << fpath.string() << std::endl;
+  }
+  FlowParams flowParams = {0, 1, 1};
+  ReferenceGeom refGeom = {0};
+  bool haveaoa = false;
+  bool haveS = false;
+  std::string line;
 
+  while (std::getline(pFile, line)) {
+    // Remove anything after "//"
+    std::size_t pos = line.find("//");
+    if (pos != std::string::npos) {
+      line = line.substr(0, pos);
+    }
+
+    // Trim leading/trailing whitespace (simple approach)
+    // You can write a more robust trim if needed.
+    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+      line.erase(line.begin());
+    }
+    while (!line.empty() && (line.back() == ' ' || line.back() == '\t')) {
+      line.pop_back();
+    }
+
+    // Skip empty lines or lines that begin with '#'
+    if (line.empty() || line[0] == '#') {
+      continue;
+    }
+
+    // First valid numeric line -> aoa, second -> S
+    if (!haveaoa) {
+      print("aoa: ", line.c_str());
+      flowParams.aoa = std::atof(line.c_str());
+      haveaoa = true;
+    } else if (!haveS) {
+      refGeom.refArea = std::atof(line.c_str());
+      haveS = true;
+    }
+  }
+
+  pFile.close();
+  return std::make_pair(flowParams, refGeom);
+}
+void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
+                   AeroResults &results) {
+
+  std::vector<std::string> headers = {"x",   "y",   "z",  "A",   "dCp", "dVx",
+                                      "dVy", "dVz", "dP", "dFx", "dFy", "dFz"};
+  savetxt(outfile,
+          (Eigen::ArrayXXd(ppair.first.centrePoints.rows(), headers.size())
+               << ppair.first.centrePoints.col(0),
+           ppair.first.centrePoints.col(1), ppair.first.centrePoints.col(2),
+           ppair.first.areas, results.panelResults["dCp"],
+           results.panelResults["dVx"], results.panelResults["dVy"],
+           results.panelResults["dVz"], results.panelResults["dP"],
+           results.panelResults["dFx"], results.panelResults["dFy"],
+           results.panelResults["dFz"])
+              .finished(),
+          " ", headers);
+}
 int main(int argc, char *argv[]) {
-  namespace fs = std::filesystem;
-  fs::path testDataLoc(std::string(SOURCE_DIR) + "/tests/test_data");
-  fs::path filePath(testDataLoc.string() + "/0012_10000.txt");
+  std::string inputFile;
+  std::string outputFile;
+  std::string paramsFile;
 
-  double aoa = 5.0;
-  Eigen::Array3d freeStream = getFreeStream(aoa, 1);
-  FlowParams flowParams = {aoa, 1, 1};
-  ReferenceGeom refGeom = {10};
-  auto pset = readConvertedComponentsFromFile(filePath);
-  align_wake_to_flow(pset, aoa);
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if ((arg == "-i") && (i + 1 < argc)) {
+      inputFile = argv[++i];
+    } else if ((arg == "-o") && (i + 1 < argc)) {
+      outputFile = argv[++i];
+    } else if ((arg == "-p") && (i + 1 < argc)) {
+      paramsFile = argv[++i];
+    }
+  }
+  if (inputFile.empty() || outputFile.empty() || paramsFile.empty()) {
+    std::cerr << "Usage: " << argv[0]
+              << " -i <input_file> -o <output_file> -p <params_file>\n";
+    return 1;
+  }
+  auto [flowParams, refGeom] = parse_param(paramsFile);
+  Eigen::Array3d freeStream = getFreeStream(flowParams.aoa, 1);
+  auto pset = readConvertedComponentsFromFile(inputFile);
+  align_wake_to_flow(pset, flowParams.aoa);
   auto panelGeometries = calc_panel_geometry(pset);
   auto evalPoints = create_eval_points(panelGeometries);
   auto compTaskPairs = makeComputeTaskPairs(panelGeometries, evalPoints);
@@ -433,29 +510,12 @@ int main(int argc, char *argv[]) {
   Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
   Eigen::ArrayXd doubletStrength = SparseSolver().solve(lhs, rhs);
 
-  SourceDoubletSingle panelMethod(panelGeometries[0].first,
-                                  panelGeometries[0].second, evalPoints,
-                                  std::make_unique<SparseSolver>(), aoa);
-  panelMethod.setFlowParams(aoa);
-  panelMethod.run();
-
-  print(panelMethod.solution.topRows(10));
-  print("\n");
-  print(panelMethod.sourceStrength.topRows(10));
-  print("\n");
-  print(doubletStrength.topRows(10));
-  print("\n");
-  print(sourceStrength.topRows(10));
-  // auto calc = postProcessBodyImpl(
-  //     panelGeometries[0].first,
-  //     calculatePanelVelocities(panelGeometries[0], doubletStrength,
-  //                              sourceStrength, freeStream),
-  //     {aoa, 1, 1}, 10);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
-
-  std::cout << "aoa: " << results[0].polars["aoa"]
-            << " CL: " << results[0].polars["CL"] << "\n";
-
+  print("CL: ", results[0].polars["CL"]);
+  int i = 1;
+  std::string outfile = outputFile + "/bodydata_S" + std::to_string(i) +
+                        "_aoa" + std::to_string(flowParams.aoa) + ".dat";
+  writeBodyData(outfile, panelGeometries[0], results[0]);
   return 0;
 }

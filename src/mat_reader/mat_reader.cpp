@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
+#include <ranges>
 #include <stdexcept>
 #include <utility>
 #include <vector>
