@@ -33,7 +33,9 @@ file(
   "${PROJECT_SOURCE_DIR}/src/surface/*.cpp"
   "${PROJECT_SOURCE_DIR}/src/panel_geo/*.cpp"
   "${PROJECT_SOURCE_DIR}/src/panel_method/*.cpp"
+  "${PROJECT_SOURCE_DIR}/src/singularity/*.cpp"
 )
+
 
 message (STATUS "Sources are: " ${SOURCES})
 add_library(

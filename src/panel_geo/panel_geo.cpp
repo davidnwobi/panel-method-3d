@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <algorithm>
 #include <ranges>
+#include <type_traits>
 
 namespace PanelGeometryUtils {
 
@@ -41,11 +42,21 @@ Eigen::Array3Xd colwiseCross(const Eigen::Ref<const Eigen::Array3Xd> &A,
 
 template <SurfaceType T>
 PanelGeometry<T>::PanelGeometry(const T &surface) : mSurface(surface) {
+  if constexpr(std::is_same_v<T, WakePanel>) {
+    if (surface.mPoints.rows() < 1){
+      return;
+    }
+  }
   panelGeoInit();
 }
 
 template <SurfaceType T>
 PanelGeometry<T>::PanelGeometry(T &&surface) noexcept : mSurface(surface) {
+  if constexpr(std::is_same_v<T, WakePanel>) {
+    if (surface.mPoints.rows() < 1){
+      return;
+    }
+  }
   panelGeoInit();
 }
 
@@ -63,8 +74,8 @@ template <SurfaceType T> void PanelGeometry<T>::panelGeoInit() {
   for (int iPanel = 0; iPanel < nPanels; iPanel++) {
     const auto &faceRow = mSurface.mFaceNodeIdx.row(iPanel);
     localFaceVertices.emplace_back(convertToLocal(
-        iPanel, mSurface.mPoints.transpose()(Eigen::placeholders::all, faceRow)
-                    .transpose()));
+        iPanel, mSurface.mPoints(faceRow, Eigen::placeholders::all)));
+
   }
 
   for (int iPanel = 0; iPanel < nPanels; iPanel++) {
@@ -72,9 +83,17 @@ template <SurfaceType T> void PanelGeometry<T>::panelGeoInit() {
   }
 }
 
+template <typename Derived>
+void normalize(DenseBase<Derived>& mat){
+  for (int i = 0; i < mat.rows(); i++){
+    mat.row(i).matrix().stableNormalize();
+  }
+
+  }
 template <SurfaceType T>
 void PanelGeometry<T>::calculateCentrePointsandVectors() {
 
+  print(__PRETTY_FUNCTION__);
   int numRows = mSurface.mFaceNodeIdx.rows();
 
   normalVectors.setZero(numRows, VecType::ColsAtCompileTime);
@@ -96,21 +115,52 @@ void PanelGeometry<T>::calculateCentrePointsandVectors() {
 
   // std::cout << c01 << "\n" << c12 << "\n" << c23 << "\n" << c30 << "\n\n";
   centrePoints = ((c01 + c23) / 2).transpose(); // Pick any opposite sides
-
+const auto& surface = mSurface;
   // tangetial vector in the x direction wrt face
-  tangentYVectors = -(c23 - c01).transpose();
-  tangentYVectors.matrix().rowwise().normalize();
 
+  tangentYVectors = -(c23 - c01).transpose();
+
+  normalize(tangentYVectors);
   // tangetial vector in the y direction wrt face
   tangentXVectors = -(c30 - c12).transpose();
-  tangentXVectors.matrix().rowwise().normalize();
+  normalize(tangentXVectors);
+  //tangentXVectors.matrix().stableNormalize();
 
   // normal vector in the z direction wrt face
   normalVectors = PanelGeometryUtils::colwiseCross(tangentXVectors.transpose(),
                                                    tangentYVectors.transpose())
                       .transpose();
-  normalVectors.matrix().rowwise().normalize();
+  normalize(normalVectors);
 
+   tangentYVectors = PanelGeometryUtils::colwiseCross(normalVectors.transpose(),
+                                                     tangentXVectors.transpose()).transpose();
+
+  normalize(tangentYVectors);
+
+  //
+  // tangentYVectors = -(surface.mPoints(surface.mFaceNodeIdx.col(3), Eigen::placeholders::all)-
+  //            surface.mPoints(surface.mFaceNodeIdx.col(0), Eigen::placeholders::all 
+  //                                        ));
+  // if ((tangentYVectors.matrix().rowwise().norm()).sum() < 1e-6){
+  // tangentYVectors = (surface.mPoints(surface.mFaceNodeIdx.col(1), Eigen::placeholders::all)-
+  //            surface.mPoints(surface.mFaceNodeIdx.col(2), Eigen::placeholders::all 
+  //                                        ));
+  // }
+  // tangentYVectors.matrix().rowwise().normalize();
+  //
+  // // tangetial vector in the y direction wrt face
+  // tangentXVectors = -(c30 - c12).transpose();
+  // tangentXVectors.matrix().rowwise().normalize();
+  //
+  // // normal vector in the z direction wrt face
+  // normalVectors = PanelGeometryUtils::colwiseCross(tangentXVectors.transpose(),
+  //                                                  tangentYVectors.transpose())
+  //                     .transpose();
+  // normalVectors.matrix().rowwise().normalize();
+  //
+  // tangentYVectors = PanelGeometryUtils::colwiseCross(normalVectors.transpose(),
+  //                                                   tangentXVectors.transpose()).transpose();
+  // tangentYVectors.matrix().rowwise().normalize();
   // centrePoints = centrePoints - normalVectors * 0.0001;
 }
 

@@ -9,8 +9,10 @@
 #include "singularity/const_doublet_far.hpp"
 #include "singularity/const_source.hpp"
 #include "singularity/const_source_far.hpp"
+#include "solver/bicgstab_solver.hpp"
 #include "solver/dense_solver.hpp"
 #include "solver/sparse_solver.hpp"
+#include "solver/gmres_solver.hpp"
 #include "surface/surface_panel.hpp"
 #include "surface/surface_reader.hpp"
 #include "surface/wake_panel.hpp"
@@ -30,13 +32,14 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <vector>
 // #define RANGE(n) views::iota(0, (int)n)
 //
 namespace fs = std::filesystem;
 Eigen::Array3d getFreeStream(double aoa, double Vinf) {
 
   double angleOfAttack = aoa * M_PI / 180;
-  return {std::cos(angleOfAttack), 0, std::sin(angleOfAttack)};
+  return {std::cos(angleOfAttack), 0.5, std::sin(angleOfAttack)};
 }
 using namespace std::ranges;
 template <typename Derived>
@@ -61,6 +64,8 @@ void rotate_3d_about_origin(Eigen::Ref<Eigen::ArrayX3d> points3d,
 
 void rotate_points_about_start(Eigen::Ref<Eigen::ArrayX3d> points3d,
                                double angle_d) {
+  if (points3d.rows() == 0) return;
+
   Eigen::RowVector3d original_loc(points3d(0, 0), 0, points3d(0, 2));
   points3d = points3d.rowwise() - original_loc.array(); // translate to origin
   rotate_3d_about_origin(points3d, angle_d);
@@ -365,6 +370,8 @@ assembleLhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
   Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
       evalDims, surfDims, surfacePanelCompTasks);
   // print(surfaceInfluenceMatrix.topLeftCorner(20, 20)) << "\n";
+
+  if (wakeDims == 0) {return surfaceInfluenceMatrix;}
   Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
       evalDims, wakeDims, wakePanelCompTasks);
 
@@ -403,6 +410,7 @@ Eigen::MatrixXd assembleLhs(std::span<const ComputeTaskPair> compTaskPairs,
     lhs.middleCols(iPoints, cols) = pts;
     iPoints += cols;
   });
+  savetxt("lhs.txt", lhs);
   return lhs;
 }
 
@@ -446,6 +454,7 @@ assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
     sourceStrength.middleRows(iPoints, rows) = pts.second;
     iPoints += rows;
   });
+  savetxt("rhs.txt", rhs);
   return {rhs, sourceStrength};
 }
 auto parse_param(const fs::path &fpath) {
@@ -563,19 +572,78 @@ void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
               .finished(),
           " ", headers);
 }
+auto postProcessTotalPolars(auto &&outO) {
+  auto out = std::move(outO);
+  double q =
+      0.5 * out.lastParams.rho * out.lastParams.Vinf * out.lastParams.Vinf;
+  Eigen::Array3d F(3);
+  F << out.polars["Fx"], out.polars["Fy"], out.polars["Fz"];
+  Eigen::ArrayXd CF = F / (q * out.refGeom.refArea);
+  double CL = (-CF(0) * std::sin(out.lastParams.aoa * M_PI / 180) +
+               CF(2) * std::cos(out.lastParams.aoa * M_PI / 180));
+  double CD = (F(0) * std::cos(out.lastParams.aoa * M_PI / 180) +
+               F(2) * std::sin(out.lastParams.aoa * M_PI / 180));
+
+  out.polars["aoa"] = out.lastParams.aoa;
+  out.polars["CFx"] = CF(0);
+  out.polars["CFy"] = CF(1);
+  out.polars["CFz"] = CF(2);
+  out.polars["CL"] = CL;
+  out.polars["CD"] = CD;
+  return out;
+}
+
 template <typename R>
-concept constant_AeroResults_range =
-    std::ranges::constant_range<R> && std::is_same_v<R, AeroResults>;
-void accumularPolars(constant_AeroResults_range auto R) {
-  Eigen::ArrayXXd polars(R.size(), 1);
+concept AeroResults_range =
+    std::ranges::range<R> &&
+    std::is_same_v<std::ranges::range_value_t<R>, AeroResults>;
+
+template <typename R>
+concept AeroResults_range_range =
+    std::ranges::range<R> && AeroResults_range<std::ranges::range_value_t<R>>;
+
+void accumulateTotalPolars(std::string outdir,
+                           AeroResults_range_range auto &&R) {
+
+  // Accumulate Forces
+  PRINT_TYPE(R[0]);
+  auto totalResults =
+      R | views::transform([](AeroResults_range auto &&results) {
+        AeroResults accResults = results[0];
+        std::ranges::for_each(results.begin() + 1, results.end(),
+                              [&accResults](auto &&res) {
+                                accResults.polars["Fx"] += res.polars["Fx"];
+                                accResults.polars["Fy"] += res.polars["Fy"];
+                                accResults.polars["Fz"] += res.polars["Fz"];
+                              });
+        return accResults;
+      });
+  auto totalPolars = views::transform(
+      totalResults, [](auto &&res) { return postProcessTotalPolars(res); });
+
+  std::vector<std::string> headers = {"aoa", "Fx",  "Fy", "Fz", "CFx",
+                                      "CFy", "CFz", "CL", "CD"};
+  Eigen::ArrayXXd polars(totalPolars.size(), headers.size());
+  for (auto i : RANGE(totalPolars.size())) {
+    for (auto j : RANGE(headers.size())) {
+      polars(i, j) = totalPolars[i].polars[headers[j]];
+    }
+  }
+  std::cout << polars;
+  savetxt(outdir + "/polars.dat", polars, " ", headers);
 };
 auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
-                  const std::string &inputFile, const std::string &outputFile) {
+                  const std::string &inputFile, const std::string &outputFile,
+                  bool rotate_wake) {
 
   Eigen::Array3d freeStream = getFreeStream(flowParams.aoa, 1);
   auto pset = readConvertedComponentsFromFile(inputFile);
-  align_wake_to_flow(pset, flowParams.aoa);
+  if (rotate_wake) {
+    align_wake_to_flow(pset, flowParams.aoa);
+  }
+  print("Wake Surface: ", pset[0].wake.mPoints.rows());
   auto panelGeometries = calc_panel_geometry(pset);
+  print("Wake Size: ", panelGeometries[0].second.centrePoints.rows());
   auto evalPoints = create_eval_points(panelGeometries);
   auto compTaskPairs = makeComputeTaskPairs(panelGeometries, evalPoints);
   auto out =
@@ -583,14 +651,15 @@ auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   Eigen::VectorXd sourceStrength = std::move(out.second);
   Eigen::VectorXd rhs = std::move(out.first);
   Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
-  Eigen::ArrayXd doubletStrength = SparseSolver().solve(lhs, rhs);
-
+    Eigen::ArrayXd doubletStrength = GMRESSolver().solve(lhs, rhs);
+  savetxt("solution", doubletStrength);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
   for (auto i : RANGE(results.size())) {
     std::string outfile = outputFile + "/bodydata_S" + std::to_string(i) +
                           "_aoa" + std::to_string((int)flowParams.aoa) + ".dat";
     writeBodyData(outfile, panelGeometries[i], results[i]);
+    print("Aoa: ", results[i].polars["aoa"], "CL: ", results[i].polars["CL"]);
   }
   return results;
 }
@@ -599,6 +668,7 @@ int main(int argc, char *argv[]) {
   std::string outputFile;
   std::string paramsFile;
   bool batchAoa = false;
+  bool rotate_wake = false;
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -610,6 +680,8 @@ int main(int argc, char *argv[]) {
       paramsFile = argv[++i];
     } else if ((arg == "-b") && (i < argc)) {
       batchAoa = true;
+    } else if ((arg == "-r") && (i < argc)) {
+      rotate_wake = true;
     }
   }
   if (inputFile.empty() || outputFile.empty() || paramsFile.empty()) {
@@ -619,17 +691,22 @@ int main(int argc, char *argv[]) {
   }
   if (!batchAoa) {
     auto [flowParams, refGeom] = parse_param(paramsFile);
-    run_analysis(flowParams, refGeom, inputFile, outputFile);
+    run_analysis(flowParams, refGeom, inputFile, outputFile, rotate_wake);
   } else {
     auto [flowParams, refGeom] = parse_param_batch(paramsFile);
     std::ranges::copy(flowParams | views::transform([](const auto &flowParams) {
                         return flowParams.aoa;
                       }),
                       std::ostream_iterator<double>(std::cout, " "));
-    auto results =
+    auto resultsView =
         flowParams | views::transform([&](const auto &flowParams) {
-          return run_analysis(flowParams, refGeom, inputFile, outputFile);
+          return run_analysis(flowParams, refGeom, inputFile, outputFile,
+                              rotate_wake);
         });
+    std::vector<std::vector<AeroResults>> results;
+    results.reserve(resultsView.size());
+    std::ranges::copy(resultsView, std::back_inserter(results));
+    accumulateTotalPolars(outputFile, results);
   }
 
   return 0;

@@ -3,20 +3,18 @@
 #include "utils/utils.hpp"
 #include <Eigen/Core>
 #include <Eigen/Sparse>
-#include <Eigen/SparseLU>
+#include <unsupported/Eigen/IterativeSolvers>
 #include <iostream>
 #include <vector>
 // #define ANALYSIS_DIR
 // "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
-struct SparseSolver : ISolver {
+
+struct BICGSTABSolver : ISolver {
   Eigen::VectorXd solve(const Eigen::MatrixXd &lhs,
                         const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 10) override {
-    // FileReaderFactory::make_file_reader("dat", " ",
-    // true)->save_data(std::string(ANALYSIS_DIR) + "/infMat.dat", lhs);
-    double lim = 1e-8;
-#if (BENCHMARKING == 0)
+    double lim = 1e-6;
     std::cout << "Creating...\n";
-#endif
+
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> T;
 
@@ -29,16 +27,16 @@ struct SparseSolver : ISolver {
         }
       }
     }
+
     SpMat A(lhs.rows(), lhs.cols());
     A.setFromTriplets(tripletList.begin(), tripletList.end());
-    Eigen::SparseLU<SpMat> solver;
-#if (BENCHMARKING == 0)
-    std::cout << "Computing...\n";
-#endif
-    solver.compute(A);
-#if (BENCHMARKING == 0)
+    Eigen::BiCGSTAB<SpMat> solver(A);
+    Eigen::VectorXd x = rhs;
     std::cout << "Solving...\n";
-#endif
-    return solver.solve(rhs);
+    x = solver.solve(rhs);
+    std::cout << "#iterations:     " << solver.iterations() << std::endl;
+    std::cout << "estimated error: " << solver.error()      << std::endl;
+     
+    return x;
   }
 };
