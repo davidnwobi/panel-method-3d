@@ -22,6 +22,7 @@
 #include <cmath>
 #include <concepts>
 #include <filesystem>
+#include <functional>
 #include <iomanip>
 #include <iterator>
 #include <memory>
@@ -39,7 +40,7 @@ namespace fs = std::filesystem;
 Eigen::Array3d getFreeStream(double aoa, double Vinf) {
 
   double angleOfAttack = aoa * M_PI / 180;
-  return {std::cos(angleOfAttack), 0.5, std::sin(angleOfAttack)};
+  return {std::cos(angleOfAttack), 0, std::sin(angleOfAttack)};
 }
 using namespace std::ranges;
 template <typename Derived>
@@ -140,7 +141,6 @@ void postProcessPolars(AeroResults &out) {
   out.polars["CL"] = CL;
   out.polars["CD"] = CD;
 }
-
 auto hChunk1D(const Eigen::Ref<const Eigen::ArrayXd> &combined,
               std::span<const size_t> chunkStart,
               std::span<const size_t> chunkSize) {
@@ -169,17 +169,15 @@ Eigen::ArrayXXd calculatePanelVelocities(
   // order, yes compute task <- centerpoints <- face
 
   // 1): Convert the centrepoints to panel reference frame
-  Eigen::ArrayXXd xPoints(nXsecs, nYSecs);
-  xPoints.setZero();
+  Eigen::ArrayXd Sx(nXsecs*nYSecs);
+  Sx.setZero();
   for (int iY = 0; iY < nYSecs; iY++) {
-    for (int iX = 1; iX < nXsecs; iX++) {
-      xPoints(iX, iY) = (panel.centrePoints.row(iX + iY * nXsecs) -
-                         panel.centrePoints.row((iX - 1) + iY * nXsecs))
-                            .matrix()
-                            .norm() +
-                        xPoints(iX - 1, iY);
-    }
+    Sx.middleRows(iY*nXsecs+1, nXsecs-1) = (panel.centrePoints.middleRows(iY*nXsecs+1, nXsecs-1) - panel.centrePoints.middleRows(iY*nXsecs, nXsecs-1)).matrix().rowwise().norm();
+    std::inclusive_scan(Sx.begin()+(iY*nXsecs), Sx.begin()+ (nXsecs*(iY+1)), Sx.begin()+(iY*nXsecs), std::plus<double>{});
   }
+
+
+
   Eigen::ArrayXXd yPoints(nXsecs, nYSecs);
   yPoints.setZero();
   for (int iX = 0; iX < nXsecs; iX++) {
@@ -196,9 +194,9 @@ Eigen::ArrayXXd calculatePanelVelocities(
   // 2:) u = -d(mu)/d(x_l); v = -d(mu)/d(y_l); w = sigma
   Eigen::ArrayXXd fPoints(nXsecs, nYSecs);
   fPoints << doubletStrength.reshaped(nXsecs, nYSecs); // no minus
-
+  
   Eigen::ArrayX3d inducedVelocities(nXsecs * nYSecs, 3);
-  inducedVelocities << -centralDifference<true>(xPoints, fPoints).reshaped(),
+  inducedVelocities << -centralDifference<true>(Sx.reshaped(nXsecs, nYSecs), fPoints).reshaped(),
       -centralDifference<false>(yPoints, fPoints).reshaped(), -sourceStrength;
 
   Eigen::ArrayX3d globalVelocites(nXsecs * nYSecs, 3);
@@ -213,10 +211,12 @@ Eigen::ArrayXXd calculatePanelVelocities(
 AeroResults
 postProcessBodyImpl(const PanelGeometry<SurfacePanel> surfacePanelGeo,
                     const Eigen::Ref<const Eigen::ArrayXXd> &surfaceVelocities,
+                    const Eigen::Ref<const Eigen::ArrayXXd> & doubletStrength,
                     const FlowParams &flowParams, double refArea) {
   AeroResults results;
   results.lastParams = flowParams;
   results.refGeom = {refArea};
+  results.panelResults["mu"] = doubletStrength;
   postProcessPanelResults(surfacePanelGeo, surfaceVelocities, results);
   postProcessPolars(results);
   return results;
@@ -226,6 +226,7 @@ postProcessBody(std::span<const PanelGeometryPair> panelGeometries,
                 const Eigen::Ref<const Eigen::ArrayXd> &doubletStrengths,
                 const Eigen::Ref<const Eigen::ArrayXd> &sourceStrengths,
                 const FlowParams &flowParams, const ReferenceGeom &refGeom) {
+
   auto chunkSize =
       panelGeometries | views::transform([](const PanelGeometryPair &pair) {
         return pair.first.centrePoints.rows();
@@ -256,13 +257,16 @@ postProcessBody(std::span<const PanelGeometryPair> panelGeometries,
   auto resultsView =
       RANGE(panelGeometries.size()) | views::transform([&](std::size_t idx) {
         return postProcessBodyImpl(panelGeometries[idx].first,
-                                   computedVelocitiesView[idx], flowParams,
+                                   computedVelocitiesView[idx], 
+                                   chunkedDoublet[idx],
+                                   flowParams,
                                    refGeom.refArea);
       });
   std::vector<AeroResults> results(chunkSize.size());
   std::ranges::copy(resultsView, results.begin());
   return results;
 }
+
 EvalPoints<double>
 create_eval_points(std::span<const PanelGeometryPair> panelGeometries) {
   auto totalEvalPoints =
@@ -559,7 +563,7 @@ void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
                    AeroResults &results) {
 
   std::vector<std::string> headers = {"x",   "y",   "z",  "A",   "dCp", "dVx",
-                                      "dVy", "dVz", "dP", "dFx", "dFy", "dFz"};
+                                      "dVy", "dVz", "dP", "dFx", "dFy", "dFz", "mu"};
   savetxt(outfile,
           (Eigen::ArrayXXd(ppair.first.centrePoints.rows(), headers.size())
                << ppair.first.centrePoints.col(0),
@@ -568,7 +572,7 @@ void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
            results.panelResults["dVx"], results.panelResults["dVy"],
            results.panelResults["dVz"], results.panelResults["dP"],
            results.panelResults["dFx"], results.panelResults["dFy"],
-           results.panelResults["dFz"])
+           results.panelResults["dFz"], results.panelResults["mu"])
               .finished(),
           " ", headers);
 }
@@ -581,8 +585,8 @@ auto postProcessTotalPolars(auto &&outO) {
   Eigen::ArrayXd CF = F / (q * out.refGeom.refArea);
   double CL = (-CF(0) * std::sin(out.lastParams.aoa * M_PI / 180) +
                CF(2) * std::cos(out.lastParams.aoa * M_PI / 180));
-  double CD = (F(0) * std::cos(out.lastParams.aoa * M_PI / 180) +
-               F(2) * std::sin(out.lastParams.aoa * M_PI / 180));
+  double CD = (CF(0) * std::cos(out.lastParams.aoa * M_PI / 180) +
+               CF(2) * std::sin(out.lastParams.aoa * M_PI / 180));
 
   out.polars["aoa"] = out.lastParams.aoa;
   out.polars["CFx"] = CF(0);
@@ -640,6 +644,7 @@ auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   auto pset = readConvertedComponentsFromFile(inputFile);
   if (rotate_wake) {
     align_wake_to_flow(pset, flowParams.aoa);
+    ;
   }
   print("Wake Surface: ", pset[0].wake.mPoints.rows());
   auto panelGeometries = calc_panel_geometry(pset);
@@ -651,10 +656,11 @@ auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   Eigen::VectorXd sourceStrength = std::move(out.second);
   Eigen::VectorXd rhs = std::move(out.first);
   Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
-    Eigen::ArrayXd doubletStrength = GMRESSolver().solve(lhs, rhs);
+    Eigen::ArrayXd doubletStrength = GMRESSolver().solve(lhs, -rhs);
   savetxt("solution", doubletStrength);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
+  
   for (auto i : RANGE(results.size())) {
     std::string outfile = outputFile + "/bodydata_S" + std::to_string(i) +
                           "_aoa" + std::to_string((int)flowParams.aoa) + ".dat";

@@ -39,6 +39,12 @@ template <std::ranges::input_range R> void print_range(const R &inputRange) {
   std::cout << "\n";
 }
 
+template <typename T>
+int sgn(T val) {
+    if (val > T(0)) return 1;   // positive
+    if (val < T(0)) return -1;  // negative
+    return 0;                   // zero
+}
 #define PRINT_RANGE(container) print_range(container);
 #define assertm(exp, msg) assert(((void)msg, exp))
 std::vector<std::string> split(const std::string &line,

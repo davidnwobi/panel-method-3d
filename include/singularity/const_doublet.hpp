@@ -8,7 +8,7 @@
 #include <valarray>
 
 struct DoubletP : IConstant3dSingularity<DoubletP> {
-  static Eigen::ArrayXd term(const Eigen::Ref<const Eigen::Array3Xd> &points,
+  static Eigen::ArrayXd term(const Eigen::Ref<const Eigen::ArrayX3d> &points,
                              const Eigen::Ref<const Eigen::Array3d> &node1,
                              const Eigen::Ref<const Eigen::Array3d> &node2);
 

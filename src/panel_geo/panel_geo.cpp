@@ -98,42 +98,40 @@ void PanelGeometry<T>::calculateCentrePointsandVectors() {
 
   normalVectors.setZero(numRows, VecType::ColsAtCompileTime);
 
-  auto calcLineCenterPoints = [&](int startIdx, int endIdx) -> Eigen::Array3Xd {
-    auto surface = mSurface;
-    return ((surface.mPoints.transpose()(Eigen::placeholders::all,
-                                         surface.mFaceNodeIdx.col(endIdx)) +
-             surface.mPoints.transpose()(Eigen::placeholders::all,
-                                         surface.mFaceNodeIdx.col(startIdx))) /
-            2)
-        .eval();
+  auto calcLineCenterPoints = [&](int startIdx, int endIdx) -> Eigen::ArrayX3d {
+    const auto& surface = mSurface;
+    return ((surface.mPoints(surface.mFaceNodeIdx.col(endIdx), Eigen::placeholders::all) +
+             surface.mPoints(surface.mFaceNodeIdx.col(startIdx), Eigen::placeholders::all))/
+            2);
   };
 
-  Eigen::Array3Xd c01 = calcLineCenterPoints(0, 1);
-  Eigen::Array3Xd c12 = calcLineCenterPoints(1, 2);
-  Eigen::Array3Xd c23 = calcLineCenterPoints(2, 3);
-  Eigen::Array3Xd c30 = calcLineCenterPoints(3, 1);
+  Eigen::ArrayX3d c01 = calcLineCenterPoints(0, 1);
+  Eigen::ArrayX3d c12 = calcLineCenterPoints(1, 2);
+  Eigen::ArrayX3d c23 = calcLineCenterPoints(2, 3);
+  Eigen::ArrayX3d c30 = calcLineCenterPoints(3, 0);
 
   // std::cout << c01 << "\n" << c12 << "\n" << c23 << "\n" << c30 << "\n\n";
-  centrePoints = ((c01 + c23) / 2).transpose(); // Pick any opposite sides
+  centrePoints = ((c01 + c23) / 2); // Pick any opposite sides
 const auto& surface = mSurface;
   // tangetial vector in the x direction wrt face
 
-  tangentYVectors = -(c23 - c01).transpose();
-
+  tangentYVectors = -(c30 - c12);
+  Eigen::ArrayX3d tangentYVectorsOther = -(c30 - c12);
   normalize(tangentYVectors);
+
   // tangetial vector in the y direction wrt face
-  tangentXVectors = -(c30 - c12).transpose();
+  tangentXVectors = (c23 - c01);
   normalize(tangentXVectors);
   //tangentXVectors.matrix().stableNormalize();
 
   // normal vector in the z direction wrt face
-  normalVectors = PanelGeometryUtils::colwiseCross(tangentXVectors.transpose(),
-                                                   tangentYVectors.transpose())
-                      .transpose();
+  normalVectors = PanelGeometryUtils::rowwiseCross(tangentXVectors,
+                                                   tangentYVectors)
+                      ;
   normalize(normalVectors);
 
-   tangentYVectors = PanelGeometryUtils::colwiseCross(normalVectors.transpose(),
-                                                     tangentXVectors.transpose()).transpose();
+   tangentYVectors = PanelGeometryUtils::rowwiseCross(normalVectors,
+                                                     tangentXVectors);
 
   normalize(tangentYVectors);
 

@@ -9,10 +9,10 @@ inline T DifferenceScalar(T x1, T x2, T f1, T f2){
 
 
 
-template <bool ColWise=true, class EigenMatType>
-EigenMatType centralDifference(const EigenMatType& x, const EigenMatType& f){
+template <bool ColWise=true, class Derived1, class Derived2>
+Eigen::ArrayXXd centralDifference(const Eigen::DenseBase<Derived1>& x, const Eigen::DenseBase<Derived2>&  f){
 	if constexpr(!ColWise){
-		auto out = centralDifference<true, EigenMatType>(x.transpose(), f.transpose());
+		Eigen::ArrayXXd out = centralDifference<true>(x.transpose(), f.transpose());
 		out.transposeInPlace();
 		return out; 
 	}	

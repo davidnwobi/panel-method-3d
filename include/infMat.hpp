@@ -27,6 +27,9 @@ Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
 
   double limit = 10;
   for (auto i : RANGE(compTaskVec.size())) {
+    if (i == 0){
+      print("here");
+    }
     const auto &face = compTaskVec[i].face;
 
     // Reference diameter
@@ -50,17 +53,22 @@ Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
     // update tempTask with far points;
     auto nearIndex =
         std::span<std::size_t>(partioned_indices.begin(), splitLoc);
-    temp.points = compTaskVec[i].points(nearIndex, Eigen::placeholders::all);
-    infMat(nearIndex, i) = Singularity::calcInfluence(temp);
+    if (nearIndex.size() > 0){
+      temp.points = compTaskVec[i].points(nearIndex, Eigen::placeholders::all);
+      infMat(nearIndex, i) = Singularity::calcInfluence(temp);
+    }
 
-    // update tempTask with far points;
+    // update tempTask with far points;k
     auto farIndex = std::span<std::size_t>(splitLoc, partioned_indices.end());
-    temp.points = compTaskVec[i].points(farIndex, Eigen::placeholders::all);
 
-    if constexpr (std::is_same_v<DoubletP, Singularity>) {
-      infMat(farIndex, i) = Singularity::calcInfluence(temp);
-    } else {
-      infMat(farIndex, i) = Singularity::calcInfluence(temp);
+    if (farIndex.size() > 0){
+      temp.points = compTaskVec[i].points(farIndex, Eigen::placeholders::all);
+      if constexpr (std::is_same_v<DoubletP, Singularity>) {
+        infMat(farIndex, i) = Singularity::calcInfluence(temp);
+      } else {
+        infMat(farIndex, i) = Singularity::calcInfluence(temp);
+      }
+
     }
     // is this allocationg new memory
     if constexpr (SelfInfluence) {
@@ -72,6 +80,10 @@ Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
     }
     std::iota(partioned_indices.begin(), partioned_indices.end(), 0);
   }
+  print("Face 0 points: \n", compTaskVec[4].face.points);
+  print("Face 1 points: \n", compTaskVec[4].points);
+  print("Face 1 points: \n", infMat.col(4));
+  print("Face 1 : \n", compTaskVec[4].face.faceIdx);
   // print(infMat.topLeftCorner(10, 10));
 #if (BENCHMARKING == 0)
   print("OUT OF: ", __PRETTY_FUNCTION__);

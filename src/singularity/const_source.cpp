@@ -30,10 +30,7 @@
   SourceP::part1term2(const Eigen::Ref<const Eigen::Array3Xd> &points,
              const Eigen::Ref<const Eigen::Array3d> &node1,
              const Eigen::Ref<const Eigen::Array3d> &node2) {
-    // auto point = mEvalPoints.get().mEvalPoints.row(centerPointIdx);
-    // auto node1 =
-    // mPanelGeoRef.get().combinedSurface.getPoints().row(nodeIdx1); auto node2
-    // = mPanelGeoRef.get().combinedSurface.getPoints().row(nodeIdx2);
+
 
     ArrayXd r1 =
         (points - node1.replicate(1, points.cols())).matrix().colwise().norm();
@@ -59,6 +56,12 @@
     };
     auto m = [](const Eigen::Ref<const Eigen::Array3d> &point1,
                 const Eigen::Ref<const Eigen::Array3d> &point2) {
+      if (std::abs(point2(0) - point1(0)) < 1e-6){
+        return sgn<double>((point2(1) - point1(1))) * std::numeric_limits<double>::infinity();
+      } 
+      if (std::abs(point2(1) - point1(1)) < 1e-6){
+         return 0.0;
+      } 
       return (point2(1) - point1(1)) / (point2(0) - point1(0));
     };
     auto r = [&points](const Eigen::Ref<const Eigen::Array3d> &faceV) {
@@ -70,11 +73,11 @@
 
     using cAr = const Eigen::Ref<const ArrayXd> &;
     auto termP = [&points](double m, cAr e, cAr h, cAr r) {
+
       return (m * e - h).atan2(points.row(2).transpose() * r); // y/x
     };
 
     double m12 = m(node1, node2);
-
     ArrayXd e1 = ek(node1);
     ArrayXd e2 = ek(node2);
     ArrayXd h1 = hk(node1);
@@ -83,8 +86,11 @@
     ArrayXd r2 = r(node2);
 
     ArrayXd pt1 = termP(m12, e1, h1, r1);
+    pt1 = (pt1 > 0).select(pt1, pt1+2*std::numbers::pi_v<double>);
     ArrayXd pt2 = termP(m12, e2, h2, r2);
-    return pt1 - pt2;
+    pt2 = (pt2 > 0).select(pt2, pt2+2*std::numbers::pi_v<double>);
+
+    return pt1-pt2;
   }
    Eigen::ArrayXd SourceP::calcInfluenceImpl(const ComputeTask &compTask) {
 
@@ -128,19 +134,13 @@
                            return  (node2-node1).matrix().norm();
                               });
     for (int i = 0; i < 4; i++){
-      if (norms(i) < 1e-6){
+      if (norms(i) < 1e-10){
         part1t1(i, Eigen::placeholders::all) = Eigen::RowVectorXd::Zero(part1t1.cols());
         part1t2(i, Eigen::placeholders::all) = Eigen::RowVectorXd::Zero(part1t2.cols());
         part2t(i, Eigen::placeholders::all) = Eigen::RowVectorXd::Zero(part2t.cols());
       }
     }
 
-  // print(part1t1.transpose());
-  // print("\n\n\n\n");
-  // print(part1t2.transpose());
-  // print("\n\n\n\n");
-  // print(part2t.transpose());
-  // print("\n\n\n\n");
 
     ArrayXd term1 = (part1t1 * part1t2).colwise().sum();
     ArrayXd term2 =
