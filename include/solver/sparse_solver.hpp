@@ -13,7 +13,7 @@ struct SparseSolver : ISolver {
                         const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 10) override {
     // FileReaderFactory::make_file_reader("dat", " ",
     // true)->save_data(std::string(ANALYSIS_DIR) + "/infMat.dat", lhs);
-    double lim = 1e-8;
+    double lim = 1e-10;
 #if (BENCHMARKING == 0)
     std::cout << "Creating...\n";
 #endif

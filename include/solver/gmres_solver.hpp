@@ -13,7 +13,7 @@
 struct GMRESSolver : ISolver {
   Eigen::VectorXd solve(const Eigen::MatrixXd &lhs,
                         const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 10) override {
-    double lim = 1e-6;
+    double lim = 1e-8;
     std::cout << "Creating...\n";
 
     typedef Eigen::SparseMatrix<double> SpMat;
@@ -31,7 +31,7 @@ struct GMRESSolver : ISolver {
 
     SpMat A(lhs.rows(), lhs.cols());
     A.setFromTriplets(tripletList.begin(), tripletList.end());
-    Eigen::GMRES<SpMat, Eigen::IncompleteLUT<double>> solver(A);
+    Eigen::GMRES<SpMat> solver(A);
     Eigen::VectorXd x = rhs;
     std::cout << "Solving...\n";
     x = solver.solve(rhs);

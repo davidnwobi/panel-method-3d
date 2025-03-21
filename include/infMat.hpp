@@ -80,10 +80,6 @@ Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
     }
     std::iota(partioned_indices.begin(), partioned_indices.end(), 0);
   }
-  print("Face 0 points: \n", compTaskVec[4].face.points);
-  print("Face 1 points: \n", compTaskVec[4].points);
-  print("Face 1 points: \n", infMat.col(4));
-  print("Face 1 : \n", compTaskVec[4].face.faceIdx);
   // print(infMat.topLeftCorner(10, 10));
 #if (BENCHMARKING == 0)
   print("OUT OF: ", __PRETTY_FUNCTION__);

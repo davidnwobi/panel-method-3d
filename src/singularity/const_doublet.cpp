@@ -23,12 +23,12 @@ static bool can_print = false;
     };
     auto m = [](const Eigen::Ref<const Eigen::Array3d> &point1,
                 const Eigen::Ref<const Eigen::Array3d> &point2) {
-      // if (std::abs(point2(0) - point1(0)) < 1e-10){
-      //   return sgn<double>((point2(1) - point1(1))) * std::numeric_limits<double>::infinity();
-      // } 
-      // if (std::abs(point2(1) - point1(1)) < 1e-10){
-      //    return 0.0;
-      // } 
+      if (std::abs(point2(0) - point1(0)) < 1e-10){
+        return sgn<double>((point2(1) - point1(1))) * std::numeric_limits<double>::infinity();
+      } 
+      if (std::abs(point2(1) - point1(1)) < 1e-10){
+         return 0.0;
+      } 
       return (point2(1) - point1(1)) / (point2(0) - point1(0));
     };
     auto r = [&points](const Eigen::Ref<const Eigen::Array3d> &faceV) {
@@ -41,15 +41,6 @@ static bool can_print = false;
     using cAr = const Eigen::Ref<const ArrayXd> &;
     auto termP = [&points](double m, cAr e, cAr h, cAr r) {
       return (m * e - h).atan2(points.col(2) * r); // y/x
-    };
-
-    using cAr = const Eigen::Ref<const ArrayXd> &;
-    auto termPAlt = [&points](double m12, cAr e1, cAr h1, cAr r1, cAr e2, cAr h2, cAr r2) {
-      Eigen::ArrayXd x1 = m12 * e1 - h1;
-      Eigen::ArrayXd y1 = points.col(2) * r1;
-      Eigen::ArrayXd x2 = m12 * e2 - h2;
-      Eigen::ArrayXd y2 = points.col(2) * r2;
-
     };
 
     double m12 = m(node1, node2);
@@ -80,11 +71,11 @@ static bool can_print = false;
                            return  (node2-node1).matrix().norm();
 
                              });
-    // for (int i = 0; i < 4; i++){
-    //   if (norms(i) < 1e-10){
-    //     term1(i, Eigen::placeholders::all) = Eigen::RowVectorXd::Zero(term1.cols());
-    //   }
-    // }
+    for (int i = 0; i < 4; i++){
+      if (norms(i) < 1e-10){
+        term1.col(i) = Eigen::ArrayXd::Zero(term1.rows());
+      }
+    }
 
     ArrayXd inf = 1 / (4 * std::numbers::pi_v<double>)*(term1).rowwise().sum();
     return inf;

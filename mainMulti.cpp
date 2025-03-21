@@ -13,6 +13,7 @@
 #include "solver/dense_solver.hpp"
 #include "solver/sparse_solver.hpp"
 #include "solver/gmres_solver.hpp"
+#include "solver/gmres_solver_ilu.hpp"
 #include "surface/surface_panel.hpp"
 #include "surface/surface_reader.hpp"
 #include "surface/wake_panel.hpp"
@@ -108,7 +109,7 @@ void postProcessPanelResults(
       0.5 * out.lastParams.rho * out.lastParams.Vinf * out.lastParams.Vinf;
   Eigen::ArrayXd dP = q * dCp;
   Eigen::ArrayX3d dF =
-      surfacePanelGeo.normalVectors.colwise() * (dP * surfacePanelGeo.areas);
+      -(surfacePanelGeo.normalVectors.colwise() * (dP * surfacePanelGeo.areas));
 
   out.panelResults["dCp"] = dCp;
   out.panelResults["dVx"] = surfaceVelocties.col(0).eval();
@@ -175,6 +176,7 @@ Eigen::ArrayXXd calculatePanelVelocities(
     Sx.middleRows(iY*nXsecs+1, nXsecs-1) = (panel.centrePoints.middleRows(iY*nXsecs+1, nXsecs-1) - panel.centrePoints.middleRows(iY*nXsecs, nXsecs-1)).matrix().rowwise().norm();
     std::inclusive_scan(Sx.begin()+(iY*nXsecs), Sx.begin()+ (nXsecs*(iY+1)), Sx.begin()+(iY*nXsecs), std::plus<double>{});
   }
+  
 
 
 
@@ -311,7 +313,6 @@ ComputeTaskPair makeComputeTasksPairImpl(const PanelGeometryPair panelGeometry,
                     std::back_inserter(compTaskPair.first));
   std::ranges::copy(wakeComputeTaskView,
                     std::back_inserter(compTaskPair.second));
-  print("Wake Tasks, ", wakeComputeTaskView.size());
   return compTaskPair;
 };
 
@@ -655,7 +656,7 @@ auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   Eigen::VectorXd sourceStrength = std::move(out.second);
   Eigen::VectorXd rhs = std::move(out.first);
   Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
-    Eigen::ArrayXd doubletStrength = SparseSolver().solve(lhs, rhs);
+    Eigen::ArrayXd doubletStrength = GMRESILUSolver().solve(lhs, rhs);
   savetxt("solution", doubletStrength);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
