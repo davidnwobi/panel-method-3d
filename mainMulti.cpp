@@ -373,7 +373,6 @@ assembleLhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
         "Wake Dims: ", wakeDims);
   Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
       evalDims, surfDims, surfacePanelCompTasks);
-  // print(surfaceInfluenceMatrix.topLeftCorner(20, 20)) << "\n";
 
   if (wakeDims == 0) {return surfaceInfluenceMatrix;}
   Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
@@ -656,7 +655,7 @@ auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   Eigen::VectorXd sourceStrength = std::move(out.second);
   Eigen::VectorXd rhs = std::move(out.first);
   Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
-    Eigen::ArrayXd doubletStrength = GMRESSolver().solve(lhs, -rhs);
+    Eigen::ArrayXd doubletStrength = SparseSolver().solve(lhs, rhs);
   savetxt("solution", doubletStrength);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);

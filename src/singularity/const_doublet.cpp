@@ -23,12 +23,12 @@ static bool can_print = false;
     };
     auto m = [](const Eigen::Ref<const Eigen::Array3d> &point1,
                 const Eigen::Ref<const Eigen::Array3d> &point2) {
-      if (std::abs(point2(0) - point1(0)) < 1e-6){
-        return sgn<double>((point2(1) - point1(1))) * std::numeric_limits<double>::infinity();
-      } 
-      if (std::abs(point2(1) - point1(1)) < 1e-6){
-         return 0.0;
-      } 
+      // if (std::abs(point2(0) - point1(0)) < 1e-10){
+      //   return sgn<double>((point2(1) - point1(1))) * std::numeric_limits<double>::infinity();
+      // } 
+      // if (std::abs(point2(1) - point1(1)) < 1e-10){
+      //    return 0.0;
+      // } 
       return (point2(1) - point1(1)) / (point2(0) - point1(0));
     };
     auto r = [&points](const Eigen::Ref<const Eigen::Array3d> &faceV) {
@@ -43,19 +43,19 @@ static bool can_print = false;
       return (m * e - h).atan2(points.col(2) * r); // y/x
     };
 
-    double m12 = m(node1, node2);
-    ArrayXd e1 = ek(node1);
-    ArrayXd e2 = ek(node2);
-    ArrayXd h1 = hk(node1);
-    ArrayXd h2 = hk(node2);
-    ArrayXd r1 = r(node1);
-    ArrayXd r2 = r(node2);
+    using cAr = const Eigen::Ref<const ArrayXd> &;
+    auto termPAlt = [&points](double m12, cAr e1, cAr h1, cAr r1, cAr e2, cAr h2, cAr r2) {
+      Eigen::ArrayXd x1 = m12 * e1 - h1;
+      Eigen::ArrayXd y1 = points.col(2) * r1;
+      Eigen::ArrayXd x2 = m12 * e2 - h2;
+      Eigen::ArrayXd y2 = points.col(2) * r2;
 
-    ArrayXd pt1 = termP(m12, e1, h1, r1);
-    pt1 = (pt1 > 0).select(pt1, pt1+2*std::numbers::pi_v<double>);
-    ArrayXd pt2 = termP(m12, e2, h2, r2);
-    pt2 = (pt2 > 0).select(pt2, pt2+2*std::numbers::pi_v<double>);
-    return pt1 - pt2;
+    };
+
+    double m12 = m(node1, node2);
+
+    ArrayXd diff =  termP(m12, ek(node1), hk(node1), r(node1)) - termP(m12, ek(node2), hk(node2), r(node2));
+      return diff.sin().atan2(diff.cos());
   }
 
    Eigen::ArrayXd DoubletP::calcInfluenceImpl(const ComputeTask &compTask) {
@@ -80,11 +80,11 @@ static bool can_print = false;
                            return  (node2-node1).matrix().norm();
 
                              });
-    for (int i = 0; i < 4; i++){
-      if (norms(i) < 1e-10){
-        term1(i, Eigen::placeholders::all) = Eigen::RowVectorXd::Zero(term1.cols());
-      }
-    }
+    // for (int i = 0; i < 4; i++){
+    //   if (norms(i) < 1e-10){
+    //     term1(i, Eigen::placeholders::all) = Eigen::RowVectorXd::Zero(term1.cols());
+    //   }
+    // }
 
     ArrayXd inf = 1 / (4 * std::numbers::pi_v<double>)*(term1).rowwise().sum();
     return inf;

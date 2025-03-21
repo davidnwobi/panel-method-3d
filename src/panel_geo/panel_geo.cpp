@@ -116,7 +116,6 @@ const auto& surface = mSurface;
   // tangetial vector in the x direction wrt face
 
   tangentYVectors = -(c30 - c12);
-  Eigen::ArrayX3d tangentYVectorsOther = -(c30 - c12);
   normalize(tangentYVectors);
 
   // tangetial vector in the y direction wrt face
