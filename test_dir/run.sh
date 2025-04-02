@@ -4,3 +4,4 @@ cmake --build . --target=mainM -j=12
 rm -rf ../../python/test_dir/
 cp -r ../test_dir/ ../../python/
 cp -r ../build/lhs.txt ../../python/
+cp -r ../build/rhs.txt ../../python/

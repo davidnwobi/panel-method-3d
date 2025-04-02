@@ -11,9 +11,9 @@
 #include "singularity/const_source_far.hpp"
 #include "solver/bicgstab_solver.hpp"
 #include "solver/dense_solver.hpp"
-#include "solver/sparse_solver.hpp"
 #include "solver/gmres_solver.hpp"
 #include "solver/gmres_solver_ilu.hpp"
+#include "solver/sparse_solver.hpp"
 #include "surface/surface_panel.hpp"
 #include "surface/surface_reader.hpp"
 #include "surface/wake_panel.hpp"
@@ -33,7 +33,6 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 #include <vector>
 // #define RANGE(n) views::iota(0, (int)n)
 //
@@ -66,7 +65,8 @@ void rotate_3d_about_origin(Eigen::Ref<Eigen::ArrayX3d> points3d,
 
 void rotate_points_about_start(Eigen::Ref<Eigen::ArrayX3d> points3d,
                                double angle_d) {
-  if (points3d.rows() == 0) return;
+  if (points3d.rows() == 0)
+    return;
 
   Eigen::RowVector3d original_loc(points3d(0, 0), 0, points3d(0, 2));
   points3d = points3d.rowwise() - original_loc.array(); // translate to origin
@@ -77,7 +77,13 @@ void align_wake_to_flow(std::vector<PanelSet> &panel_sets, double aoa) {
   std::ranges::for_each(
       panel_sets,
       [&aoa](WakePanel &wake) {
-        return rotate_points_about_start(wake.mPoints, aoa);
+        auto nX =  wake.nXsecs+1;
+        if (nX > 1){
+          for (auto i : RANGE(wake.nYsecs+1)){ 
+             rotate_points_about_start(wake.mPoints.middleRows(i*nX, nX), aoa);
+            ;
+          }
+        }
       },
       &PanelSet::wake);
 }
@@ -170,36 +176,78 @@ Eigen::ArrayXXd calculatePanelVelocities(
   // order, yes compute task <- centerpoints <- face
 
   // 1): Convert the centrepoints to panel reference frame
-  Eigen::ArrayXd Sx(nXsecs*nYSecs);
+  const auto& pcp = panel.centrePoints;
+  Eigen::ArrayXd Sx(nXsecs * nYSecs);
   Sx.setZero();
   for (int iY = 0; iY < nYSecs; iY++) {
-    Sx.middleRows(iY*nXsecs+1, nXsecs-1) = (panel.centrePoints.middleRows(iY*nXsecs+1, nXsecs-1) - panel.centrePoints.middleRows(iY*nXsecs, nXsecs-1)).matrix().rowwise().norm();
-    std::inclusive_scan(Sx.begin()+(iY*nXsecs), Sx.begin()+ (nXsecs*(iY+1)), Sx.begin()+(iY*nXsecs), std::plus<double>{});
+    Sx.middleRows(iY * nXsecs + 1, nXsecs - 1) =
+        (pcp.middleRows(iY * nXsecs + 1, nXsecs - 1) -
+         pcp.middleRows(iY * nXsecs, nXsecs - 1))
+            .matrix()
+            .rowwise()
+            .norm();
+    std::inclusive_scan(Sx.begin() + (iY * nXsecs),
+                        Sx.begin() + (nXsecs * (iY + 1)),
+                        Sx.begin() + (iY * nXsecs), std::plus<double>{});
   }
-  
-
-
 
   Eigen::ArrayXXd yPoints(nXsecs, nYSecs);
   yPoints.setZero();
   for (int iX = 0; iX < nXsecs; iX++) {
     for (int iY = 1; iY < nYSecs; iY++) {
-      yPoints(iX, iY) = (panel.centrePoints.row(iX + iY * nXsecs) -
-                         panel.centrePoints.row(iX + (iY - 1) * nXsecs))
+      yPoints(iX, iY) = (pcp.row(iX + iY * nXsecs) -
+                         pcp.row(iX + (iY - 1) * nXsecs))
                             .matrix()
                             .norm() +
                         yPoints(iX, iY - 1);
     }
   }
-  Eigen::ArrayXXd zPoints = panel.centrePoints.col(2).reshaped(nXsecs, nYSecs);
+  Eigen::ArrayXXd zPoints = pcp.col(2).reshaped(nXsecs, nYSecs);
 
   // 2:) u = -d(mu)/d(x_l); v = -d(mu)/d(y_l); w = sigma
   Eigen::ArrayXXd fPoints(nXsecs, nYSecs);
   fPoints << doubletStrength.reshaped(nXsecs, nYSecs); // no minus
-  
+
   Eigen::ArrayX3d inducedVelocities(nXsecs * nYSecs, 3);
-  inducedVelocities << -centralDifference<true>(Sx.reshaped(nXsecs, nYSecs), fPoints).reshaped(),
-      -centralDifference<false>(yPoints, fPoints).reshaped(), -sourceStrength;
+  inducedVelocities << -centralDifference<true>(Sx.reshaped(nXsecs, nYSecs),
+                                                fPoints)
+                            .reshaped(),
+      -centralDifference<false>(yPoints, fPoints).reshaped(), sourceStrength;
+   
+  // Eigen::ArrayXd dX(nXsecs * nYSecs);
+  // dX.setZero();
+  // for (int iY = 0; iY < nYSecs; iY++) {
+  //   dX(iY * nXsecs) = pcp(iY * nXsecs + 1, 0) - pcp(iY * nXsecs, 0);
+  //   dX.middleRows(iY * nXsecs + 1, nXsecs - 2) =
+  //       (pcp.middleRows(iY * nXsecs + 2, nXsecs - 2) -
+  //        pcp.middleRows(iY * nXsecs , nXsecs - 2)).col(0);
+  //   dX((iY+1) * nXsecs -1) = pcp((iY+1) * nXsecs - 1, 0) - pcp((iY+1) * nXsecs - 2, 0);
+  // }
+  // Eigen::ArrayXd dY(nXsecs * nYSecs);
+  // dY.setZero();
+  // for (int iY = 0; iY < nYSecs; iY++) {
+  //   dY(iY * nXsecs) = pcp(iY * nXsecs + 1, 1) - pcp(iY * nXsecs, 1);
+  //   dY.middleRows(iY * nXsecs + 1, nXsecs - 2) =
+  //       (pcp.middleRows(iY * nXsecs + 2, nXsecs - 2) -
+  //        pcp.middleRows(iY * nXsecs  , nXsecs - 2)).col(1);
+  //   dY((iY+1) * nXsecs -1) = pcp((iY+1) * nXsecs - 1, 1) - pcp((iY+1) * nXsecs - 2, 1);
+  // }
+  // Eigen::ArrayXd dZ(nXsecs * nYSecs);
+  // dZ.setZero();
+  // for (int iY = 0; iY < nYSecs; iY++) {
+  //   dZ(iY * nXsecs) = pcp(iY * nXsecs + 1, 2) - pcp(iY * nXsecs, 2);
+  //   dZ.middleRows(iY * nXsecs + 1, nXsecs - 2) =
+  //       (pcp.middleRows(iY * nXsecs + 2, nXsecs - 2) -
+  //        pcp.middleRows(iY * nXsecs , nXsecs - 2)).col(2);
+  //   dZ((iY+1) * nXsecs -1) = pcp((iY+1) * nXsecs - 1, 2) - pcp((iY+1) * nXsecs - 2, 2);
+  // }
+  // Eigen::ArrayXd dR = (dX.square() + dY.square() + dZ.square()).sqrt();
+  // print(dX.topRows(20), "\n");
+  // print(dY.topRows(20), "\n");
+  // print(dZ.topRows(20), "\n");
+  // print(dR.topRows(20), "\n\n\n");
+  // inducedVelocities.col(0) += inducedVelocities.col(1) * (dX.square() + dZ.square())/dR;
+  // inducedVelocities.col(1) += inducedVelocities.col(1) * (dY.square() + dZ.square())/dR;
 
   Eigen::ArrayX3d globalVelocites(nXsecs * nYSecs, 3);
 
@@ -213,7 +261,7 @@ Eigen::ArrayXXd calculatePanelVelocities(
 AeroResults
 postProcessBodyImpl(const PanelGeometry<SurfacePanel> surfacePanelGeo,
                     const Eigen::Ref<const Eigen::ArrayXXd> &surfaceVelocities,
-                    const Eigen::Ref<const Eigen::ArrayXXd> & doubletStrength,
+                    const Eigen::Ref<const Eigen::ArrayXXd> &doubletStrength,
                     const FlowParams &flowParams, double refArea) {
   AeroResults results;
   results.lastParams = flowParams;
@@ -258,11 +306,9 @@ postProcessBody(std::span<const PanelGeometryPair> panelGeometries,
       });
   auto resultsView =
       RANGE(panelGeometries.size()) | views::transform([&](std::size_t idx) {
-        return postProcessBodyImpl(panelGeometries[idx].first,
-                                   computedVelocitiesView[idx], 
-                                   chunkedDoublet[idx],
-                                   flowParams,
-                                   refGeom.refArea);
+        return postProcessBodyImpl(
+            panelGeometries[idx].first, computedVelocitiesView[idx],
+            chunkedDoublet[idx], flowParams, refGeom.refArea);
       });
   std::vector<AeroResults> results(chunkSize.size());
   std::ranges::copy(resultsView, results.begin());
@@ -375,11 +421,12 @@ assembleLhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
   Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
       evalDims, surfDims, surfacePanelCompTasks);
 
-  if (wakeDims == 0) {return surfaceInfluenceMatrix;}
+  if (wakeDims == 0) {
+    return surfaceInfluenceMatrix;
+  }
   Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
       evalDims, wakeDims, wakePanelCompTasks);
-
-  // combine source and wake
+  //  combine source and wake
   for (std::size_t iWakeP = 0;
        iWakeP < wakePanelGeo.mSurface.mTrailingEdgeIdx.rows(); iWakeP++) {
 
@@ -430,6 +477,7 @@ assembleRhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
       evalDims, surfDims, surfacePanelCompTasks);
   Eigen::VectorXd sourceStrength =
       rowwiseDotProduct(surfacePanelGeo.normalVectors, freeStream);
+  savetxt("rhs.txt", sourceInfluenceMat);
   return {-(sourceInfluenceMat * sourceStrength), sourceStrength};
 }
 
@@ -458,7 +506,6 @@ assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
     sourceStrength.middleRows(iPoints, rows) = pts.second;
     iPoints += rows;
   });
-  savetxt("rhs.txt", rhs);
   return {rhs, sourceStrength};
 }
 auto parse_param(const fs::path &fpath) {
@@ -562,8 +609,9 @@ auto parse_param_batch(const fs::path &fpath) {
 void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
                    AeroResults &results) {
 
-  std::vector<std::string> headers = {"x",   "y",   "z",  "A",   "dCp", "dVx",
-                                      "dVy", "dVz", "dP", "dFx", "dFy", "dFz", "mu"};
+  std::vector<std::string> headers = {"x",   "y",   "z",   "A",  "dCp",
+                                      "dVx", "dVy", "dVz", "dP", "dFx",
+                                      "dFy", "dFz", "mu"};
   savetxt(outfile,
           (Eigen::ArrayXXd(ppair.first.centrePoints.rows(), headers.size())
                << ppair.first.centrePoints.col(0),
@@ -643,6 +691,7 @@ auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   Eigen::Array3d freeStream = getFreeStream(flowParams.aoa, 1);
   auto pset = readConvertedComponentsFromFile(inputFile);
   if (rotate_wake) {
+    print("Aligning Wake\n");
     align_wake_to_flow(pset, flowParams.aoa);
     ;
   }
@@ -656,11 +705,11 @@ auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   Eigen::VectorXd sourceStrength = std::move(out.second);
   Eigen::VectorXd rhs = std::move(out.first);
   Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
-    Eigen::ArrayXd doubletStrength = GMRESILUSolver().solve(lhs, rhs);
+  Eigen::ArrayXd doubletStrength = SparseSolver().solve(lhs, rhs);
   savetxt("solution", doubletStrength);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
-  
+
   for (auto i : RANGE(results.size())) {
     std::string outfile = outputFile + "/bodydata_S" + std::to_string(i) +
                           "_aoa" + std::to_string((int)flowParams.aoa) + ".dat";

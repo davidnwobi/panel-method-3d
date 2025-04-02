@@ -39,11 +39,12 @@ template <std::ranges::input_range R> void print_range(const R &inputRange) {
   std::cout << "\n";
 }
 
-template <typename T>
-int sgn(T val) {
-    if (val > T(0)) return 1;   // positive
-    if (val < T(0)) return -1;  // negative
-    return 0;                   // zero
+template <typename T> int sgn(T val) {
+  if (val > T(0))
+    return 1; // positive
+  if (val < T(0))
+    return -1; // negative
+  return 0;    // zero
 }
 #define PRINT_RANGE(container) print_range(container);
 #define assertm(exp, msg) assert(((void)msg, exp))
@@ -352,8 +353,8 @@ std::string demangle(const char *mangledName);
             << std::endl;
 
 Eigen::ArrayXd
-rowwiseDotProduct(const Eigen::ArrayXXd &a1,
-                  const Eigen::Array<double, 1, -1, Eigen::RowMajor> &a2);
+rowwiseDotProduct(const Eigen::Ref<const Eigen::ArrayXXd> &a1,
+                  const Eigen::Ref<const Eigen::RowVectorXd> &a2);
 
 template <typename MatA, typename MatB, typename... Rest>
 auto vMergeRecursive(MatA &&matA, MatB &&matB,

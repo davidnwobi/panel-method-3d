@@ -42,8 +42,8 @@ Eigen::Array3Xd colwiseCross(const Eigen::Ref<const Eigen::Array3Xd> &A,
 
 template <SurfaceType T>
 PanelGeometry<T>::PanelGeometry(const T &surface) : mSurface(surface) {
-  if constexpr(std::is_same_v<T, WakePanel>) {
-    if (surface.mPoints.rows() < 1){
+  if constexpr (std::is_same_v<T, WakePanel>) {
+    if (surface.mPoints.rows() < 1) {
       return;
     }
   }
@@ -52,8 +52,8 @@ PanelGeometry<T>::PanelGeometry(const T &surface) : mSurface(surface) {
 
 template <SurfaceType T>
 PanelGeometry<T>::PanelGeometry(T &&surface) noexcept : mSurface(surface) {
-  if constexpr(std::is_same_v<T, WakePanel>) {
-    if (surface.mPoints.rows() < 1){
+  if constexpr (std::is_same_v<T, WakePanel>) {
+    if (surface.mPoints.rows() < 1) {
       return;
     }
   }
@@ -75,7 +75,6 @@ template <SurfaceType T> void PanelGeometry<T>::panelGeoInit() {
     const auto &faceRow = mSurface.mFaceNodeIdx.row(iPanel);
     localFaceVertices.emplace_back(convertToLocal(
         iPanel, mSurface.mPoints(faceRow, Eigen::placeholders::all)));
-
   }
 
   for (int iPanel = 0; iPanel < nPanels; iPanel++) {
@@ -83,13 +82,11 @@ template <SurfaceType T> void PanelGeometry<T>::panelGeoInit() {
   }
 }
 
-template <typename Derived>
-void normalize(DenseBase<Derived>& mat){
-  for (int i = 0; i < mat.rows(); i++){
+template <typename Derived> void normalize(DenseBase<Derived> &mat) {
+  for (int i = 0; i < mat.rows(); i++) {
     mat.row(i).matrix().stableNormalize();
   }
-
-  }
+}
 template <SurfaceType T>
 void PanelGeometry<T>::calculateCentrePointsandVectors() {
 
@@ -99,9 +96,11 @@ void PanelGeometry<T>::calculateCentrePointsandVectors() {
   normalVectors.setZero(numRows, VecType::ColsAtCompileTime);
 
   auto calcLineCenterPoints = [&](int startIdx, int endIdx) -> Eigen::ArrayX3d {
-    const auto& surface = mSurface;
-    return ((surface.mPoints(surface.mFaceNodeIdx.col(endIdx), Eigen::placeholders::all) +
-             surface.mPoints(surface.mFaceNodeIdx.col(startIdx), Eigen::placeholders::all))/
+    const auto &surface = mSurface;
+    return ((surface.mPoints(surface.mFaceNodeIdx.col(endIdx),
+                             Eigen::placeholders::all) +
+             surface.mPoints(surface.mFaceNodeIdx.col(startIdx),
+                             Eigen::placeholders::all)) /
             2);
   };
 
@@ -112,7 +111,7 @@ void PanelGeometry<T>::calculateCentrePointsandVectors() {
 
   // std::cout << c01 << "\n" << c12 << "\n" << c23 << "\n" << c30 << "\n\n";
   centrePoints = ((c01 + c23) / 2); // Pick any opposite sides
-const auto& surface = mSurface;
+  const auto &surface = mSurface;
   // tangetial vector in the x direction wrt face
 
   tangentYVectors = -(c30 - c12);
@@ -121,26 +120,29 @@ const auto& surface = mSurface;
   // tangetial vector in the y direction wrt face
   tangentXVectors = (c23 - c01);
   normalize(tangentXVectors);
-  //tangentXVectors.matrix().stableNormalize();
+  // tangentXVectors.matrix().stableNormalize();
 
   // normal vector in the z direction wrt face
-  normalVectors = PanelGeometryUtils::rowwiseCross(tangentXVectors,
-                                                   tangentYVectors)
-                      ;
+  normalVectors =
+      PanelGeometryUtils::rowwiseCross(tangentXVectors, tangentYVectors);
   normalize(normalVectors);
 
-   tangentYVectors = PanelGeometryUtils::rowwiseCross(normalVectors,
-                                                     tangentXVectors);
+  tangentYVectors =
+      PanelGeometryUtils::rowwiseCross(normalVectors, tangentXVectors);
 
   normalize(tangentYVectors);
 
   //
-  // tangentYVectors = -(surface.mPoints(surface.mFaceNodeIdx.col(3), Eigen::placeholders::all)-
-  //            surface.mPoints(surface.mFaceNodeIdx.col(0), Eigen::placeholders::all 
+  // tangentYVectors = -(surface.mPoints(surface.mFaceNodeIdx.col(3),
+  // Eigen::placeholders::all)-
+  //            surface.mPoints(surface.mFaceNodeIdx.col(0),
+  //            Eigen::placeholders::all
   //                                        ));
   // if ((tangentYVectors.matrix().rowwise().norm()).sum() < 1e-6){
-  // tangentYVectors = (surface.mPoints(surface.mFaceNodeIdx.col(1), Eigen::placeholders::all)-
-  //            surface.mPoints(surface.mFaceNodeIdx.col(2), Eigen::placeholders::all 
+  // tangentYVectors = (surface.mPoints(surface.mFaceNodeIdx.col(1),
+  // Eigen::placeholders::all)-
+  //            surface.mPoints(surface.mFaceNodeIdx.col(2),
+  //            Eigen::placeholders::all
   //                                        ));
   // }
   // tangentYVectors.matrix().rowwise().normalize();
@@ -150,12 +152,14 @@ const auto& surface = mSurface;
   // tangentXVectors.matrix().rowwise().normalize();
   //
   // // normal vector in the z direction wrt face
-  // normalVectors = PanelGeometryUtils::colwiseCross(tangentXVectors.transpose(),
+  // normalVectors =
+  // PanelGeometryUtils::colwiseCross(tangentXVectors.transpose(),
   //                                                  tangentYVectors.transpose())
   //                     .transpose();
   // normalVectors.matrix().rowwise().normalize();
   //
-  // tangentYVectors = PanelGeometryUtils::colwiseCross(normalVectors.transpose(),
+  // tangentYVectors =
+  // PanelGeometryUtils::colwiseCross(normalVectors.transpose(),
   //                                                   tangentXVectors.transpose()).transpose();
   // tangentYVectors.matrix().rowwise().normalize();
   // centrePoints = centrePoints - normalVectors * 0.0001;

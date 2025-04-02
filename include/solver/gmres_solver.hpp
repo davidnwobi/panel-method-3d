@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
+#include <cmath>
 #include <unsupported/Eigen/IterativeSolvers>
 #include <iostream>
 #include <vector>
@@ -15,7 +16,6 @@ struct GMRESSolver : ISolver {
                         const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 10) override {
     double lim = 1e-8;
     std::cout << "Creating...\n";
-
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> T;
 
@@ -23,7 +23,7 @@ struct GMRESSolver : ISolver {
     tripletList.reserve(lhs.rows() * lhs.cols());
     for (int i = 0; i < lhs.rows(); i++) {
       for (int j = 0; j < lhs.cols(); j++) {
-        if (std::abs(lhs(i, j)) > lim) {
+        if (!std::isinf(lhs(i, j)) && !std::isnan(lhs(i, j)) && std::abs(lhs(i, j)) > lim) {
           tripletList.push_back(T(i, j, lhs(i, j)));
         }
       }

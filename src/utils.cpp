@@ -130,7 +130,7 @@ std::string demangle(const char *mangledName) {
 }
 
 Eigen::ArrayXd
-rowwiseDotProduct(const Eigen::ArrayXXd &a1,
-                  const Eigen::Array<double, 1, -1, Eigen::RowMajor> &a2) {
-  return (a1.rowwise() * a2).rowwise().sum();
+rowwiseDotProduct(const Eigen::Ref<const Eigen::ArrayXXd> &a1,
+                  const Eigen::Ref<const Eigen::RowVectorXd> &a2) {
+  return (a1.rowwise() * a2.array()).rowwise().sum();
 }
