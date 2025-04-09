@@ -2,9 +2,9 @@
 #include "concepts.hpp"
 #include "evalPoints.hpp"
 #include "panel_geo/panel_geo.hpp"
-#include "utils/utils.hpp"
 #include <Eigen/Core>
 #include <vector>
+#include  <span>
 
 struct ComputeTask {
   //
@@ -19,10 +19,12 @@ struct ComputeTask {
   Eigen::ArrayX3d points;
 };
 
+using ComputeTaskPair =
+    std::pair<std::vector<ComputeTask>, std::vector<ComputeTask>>;
 // Ctor
 template <SurfaceType Surface>
 ComputeTask createInfluenceComputeTask(const PanelGeometry<Surface> &panelGeo,
-                                       EvalPoints<double> evalPoints,
+                                       const EvalPoints<double> &evalPoints,
                                        std::size_t faceIdx) {
   ComputeTask compTask;
 
@@ -34,3 +36,13 @@ ComputeTask createInfluenceComputeTask(const PanelGeometry<Surface> &panelGeo,
 
   return compTask;
 }
+
+
+ComputeTaskPair makeComputeTasksPairImpl(const PanelGeometryPair &panelGeometry,
+                                         const EvalPoints<double> &evalPoints);
+
+std::vector<ComputeTaskPair>
+makeComputeTaskPairs(std::span<PanelGeometryPair> panelGeometries,
+                     const EvalPoints<double> &evalPoints);
+
+  

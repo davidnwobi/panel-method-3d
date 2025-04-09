@@ -36,11 +36,12 @@
 #include <vector>
 #include "helpers.hpp"
 #include "post_processing.hpp"
+  #include "lhs.hpp"
+  #include "rhs.hpp"
 // #define RANGE(n) views::iota(0, (int)n)
 //
 namespace fs = std::filesystem;
-using ComputeTaskPair =
-    std::pair<std::vector<ComputeTask>, std::vector<ComputeTask>>;
+
 
 
 
@@ -64,180 +65,8 @@ create_eval_points(std::span<const PanelGeometryPair> panelGeometries) {
   });
   return evalPoints;
 }
-ComputeTaskPair makeComputeTasksPairImpl(const PanelGeometryPair &panelGeometry,
-                                         const EvalPoints<double> &evalPoints) {
-  int surfPanels = panelGeometry.first.centrePoints.rows();
-  int wakePanels = panelGeometry.second.centrePoints.rows();
-  auto surfaceComputeTaskView =
-      RANGE(surfPanels) |
-      views::transform([&panelGeometry, &evalPoints](int faceIdx) {
-        return createInfluenceComputeTask(panelGeometry.first, evalPoints,
-                                          faceIdx);
-      });
-  auto wakeComputeTaskView =
-      RANGE(wakePanels) |
-      views::transform([&panelGeometry, &evalPoints](int faceIdx) {
-        return createInfluenceComputeTask(panelGeometry.second, evalPoints,
-                                          faceIdx);
-      });
 
-  ComputeTaskPair compTaskPair;
-  compTaskPair.first.reserve(surfPanels);
-  compTaskPair.second.reserve(wakePanels);
-  std::ranges::copy(surfaceComputeTaskView,
-                    std::back_inserter(compTaskPair.first));
-  std::ranges::copy(wakeComputeTaskView,
-                    std::back_inserter(compTaskPair.second));
-  return compTaskPair;
-};
-
-auto makeChunkData(const auto &panelGeometry) {
-
-  auto chunkSize = panelGeometry | views::transform([](const auto &pg) {
-                     return pg.centrePoints.rows();
-                   });
-  std::vector<size_t> chunkStart(chunkSize.size(), 0);
-  std::exclusive_scan(chunkSize.begin(), chunkSize.end(), chunkStart.begin(),
-                      0);
-  return std::pair{chunkStart, chunkSize};
-}
-std::vector<ComputeTaskPair>
-makeComputeTaskPairs(std::span<PanelGeometryPair> panelGeometries,
-                     const EvalPoints<double> &evalPoints) {
-
-  int nBodies = panelGeometries.size();
-
-  auto pairs =
-      RANGE(nBodies) |
-      views::transform([&panelGeometries, &evalPoints](int iBody) {
-        return makeComputeTasksPairImpl(panelGeometries[iBody], evalPoints);
-      });
-
-  std::vector<ComputeTaskPair> compTaskPairs;
-  compTaskPairs.reserve(nBodies);
-  std::ranges::copy(pairs, std::back_inserter(compTaskPairs));
-
-  // Generate correct faceIdx for both surfaces for 0 to the total number of
-  // panels
-  auto [surfChunkStart, surfChunkSize] =
-      makeChunkData(panelGeometries | views::transform([](const auto &pgPair) {
-                      return pgPair.first;
-                    }));
-  auto surfFaceIdxView =
-      RANGE(nBodies) | views::transform([&](auto idx) {
-        return views::iota(surfChunkStart[idx],
-                           surfChunkStart[idx] + surfChunkSize[idx]);
-      });
-
-  for (auto i : RANGE(nBodies)) {
-    for (auto j : RANGE(compTaskPairs[i].first.size())) {
-      compTaskPairs[i].first[j].face.faceIdx = surfFaceIdxView[i][j];
-    }
-  }
-  return compTaskPairs;
-}
-Eigen::MatrixXd
-assembleLhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
-                std::span<const ComputeTask> wakePanelCompTasks,
-                const PanelGeometry<WakePanel> &wakePanelGeo,
-                const EvalPoints<double> &evalPoints) {
-
-  std::size_t evalDims = evalPoints.mEvalPoints.rows();
-  std::size_t surfDims = surfacePanelCompTasks.size();
-  std::size_t wakeDims = wakePanelCompTasks.size();
-  print("Eval Dims: ", evalDims, "Surf Dims: ", surfDims,
-        "Wake Dims: ", wakeDims);
-  Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
-      evalDims, surfDims, surfacePanelCompTasks);
-
-  if (wakeDims == 0) {
-    return surfaceInfluenceMatrix;
-  }
-  Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
-      evalDims, wakeDims, wakePanelCompTasks);
-  //  combine source and wake
-  for (std::size_t iWakeP = 0;
-       iWakeP < wakePanelGeo.mSurface.mTrailingEdgeIdx.rows(); iWakeP++) {
-
-    // NOTE: bad for cache?
-
-    int lowerFaceIdx = wakePanelGeo.mSurface.mTrailingEdgeIdx(iWakeP, 0);
-    int upperFaceIdx = wakePanelGeo.mSurface.mTrailingEdgeIdx(iWakeP, 1);
-    surfaceInfluenceMatrix(Eigen::placeholders::all, lowerFaceIdx) -=
-        wakeInfluenceMatrix(Eigen::placeholders::all, iWakeP);
-    surfaceInfluenceMatrix(Eigen::placeholders::all, upperFaceIdx) +=
-        wakeInfluenceMatrix(Eigen::placeholders::all, iWakeP);
-  }
-  return surfaceInfluenceMatrix;
-}
-
-Eigen::MatrixXd assembleLhs(std::span<const ComputeTaskPair> compTaskPairs,
-                            std::span<const PanelGeometryPair> panelGeometries,
-                            const EvalPoints<double> &evalPoints) {
-
-  auto lhsView =
-      RANGE(compTaskPairs.size()) | views::transform([&](std::size_t idx) {
-        return assembleLhsImpl(compTaskPairs[idx].first,
-                               compTaskPairs[idx].second,
-                               panelGeometries[idx].second, evalPoints);
-      });
-
-  std::size_t mDims = evalPoints.mEvalPoints.rows();
-  Eigen::MatrixXd lhs(mDims, mDims);
-  std::size_t iPoints = 0;
-  std::ranges::for_each(lhsView, [&](const Eigen::Ref<const MatrixXd> &pts) {
-    const auto cols = pts.cols();
-    lhs.middleCols(iPoints, cols) = pts;
-    iPoints += cols;
-  });
-  savetxt("lhs.txt", lhs);
-  return lhs;
-}
-
-std::pair<Eigen::VectorXd, Eigen::VectorXd>
-assembleRhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
-                const PanelGeometry<SurfacePanel> &surfacePanelGeo,
-                const EvalPoints<double> &evalPoints,
-                const Eigen::Ref<Eigen::Array3d> &freeStream) {
-
-  std::size_t evalDims = evalPoints.mEvalPoints.rows();
-  std::size_t surfDims = surfacePanelCompTasks.size();
-  Eigen::MatrixXd sourceInfluenceMat = makeInfluenceMatrix<SourceP, true>(
-      evalDims, surfDims, surfacePanelCompTasks);
-  Eigen::VectorXd sourceStrength =
-      rowwiseDotProduct(surfacePanelGeo.normalVectors, freeStream);
-  savetxt("rhs.txt", sourceInfluenceMat);
-  return {-(sourceInfluenceMat * sourceStrength), sourceStrength};
-}
-
-std::pair<Eigen::VectorXd, Eigen::VectorXd>
-assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
-            std::span<const PanelGeometryPair> panelGeometries,
-            const EvalPoints<double> &evalPoints,
-            const Eigen::Ref<Eigen::Array3d> &freeStream) {
-
-  auto rhsView =
-      RANGE(compTaskPairs.size()) | views::transform([&](std::size_t idx) {
-        return assembleRhsImpl(compTaskPairs[idx].first,
-                               panelGeometries[idx].first, evalPoints,
-                               freeStream);
-      });
-
-  std::size_t mDims = evalPoints.mEvalPoints.rows();
-  Eigen::VectorXd rhs(mDims);
-
-  rhs.setZero();
-  Eigen::VectorXd sourceStrength(mDims);
-  std::size_t iPoints = 0;
-  std::ranges::for_each(rhsView, [&](const auto &pts) {
-    rhs += pts.first;
-    const auto rows = pts.second.rows();
-    sourceStrength.middleRows(iPoints, rows) = pts.second;
-    iPoints += rows;
-  });
-  return {rhs, sourceStrength};
-}
-auto parse_param(const fs::path &fpath) {
+std::pair<FlowParams, ReferenceGeom> parse_param(const fs::path &fpath) {
   std::ifstream pFile(fpath);
   if (!pFile.is_open()) {
     std::cerr << "Error opening params file: " << fpath.string() << std::endl;
@@ -279,11 +108,11 @@ auto parse_param(const fs::path &fpath) {
       haveS = true;
     }
   }
-
   pFile.close();
   return std::make_pair(flowParams, refGeom);
 }
-auto parse_param_batch(const fs::path &fpath) {
+std::pair<std::vector<FlowParams>, ReferenceGeom> 
+parse_param_batch(const fs::path &fpath) {
   std::ifstream pFile(fpath);
   if (!pFile.is_open()) {
     std::cerr << "Error opening params file: " << fpath.string() << std::endl;
@@ -413,7 +242,7 @@ void accumulateTotalPolars(std::string outdir,
   std::cout << polars;
   savetxt(outdir + "/polars.dat", polars, " ", headers);
 };
-auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
+std::vector<AeroResults> run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
                   const std::string &inputFile, const std::string &outputFile,
                   bool rotate_wake) {
 
