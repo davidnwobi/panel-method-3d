@@ -1,4 +1,4 @@
-
+#pragma once
 #include "panel_method/ipanel.hpp"
 #include "panel_method/source_doublet_single.hpp"
 #include "solver/isolver.hpp"

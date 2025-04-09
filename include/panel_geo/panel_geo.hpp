@@ -3,6 +3,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <vector>
+#include "surface/surface_panel.hpp"
+#include "surface/wake_panel.hpp"
 
 template <SurfaceType T> struct PanelGeometry;
 
@@ -43,3 +45,7 @@ public:
   Eigen::ArrayX3d convertToLocal(int faceIdx, const ArrayX3d &points) const;
   double calcPolyArea(const Eigen::ArrayX3d &vertices) const;
 };
+
+using PanelGeometryPair =
+    std::pair<PanelGeometry<SurfacePanel>, PanelGeometry<WakePanel>>;
+
