@@ -212,7 +212,7 @@ Eigen::ArrayXXd calculatePanelVelocities(
   inducedVelocities << -centralDifference<true>(Sx.reshaped(nXsecs, nYSecs),
                                                 fPoints)
                             .reshaped(),
-      -centralDifference<false>(yPoints, fPoints).reshaped(), sourceStrength;
+      -centralDifference<false>(yPoints, fPoints).reshaped(), -sourceStrength;
    
   // Eigen::ArrayXd dX(nXsecs * nYSecs);
   // dX.setZero();
@@ -705,7 +705,7 @@ auto run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   Eigen::VectorXd sourceStrength = std::move(out.second);
   Eigen::VectorXd rhs = std::move(out.first);
   Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
-  Eigen::ArrayXd doubletStrength = SparseSolver().solve(lhs, rhs);
+  Eigen::ArrayXd doubletStrength = GMRESSolver().solve(lhs, rhs);
   savetxt("solution", doubletStrength);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
