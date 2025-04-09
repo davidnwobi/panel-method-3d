@@ -3,6 +3,20 @@
 #include "panel_geo/panel_geo.hpp"
 #include "surface/surface_reader.hpp"
 #include <ranges>
+#include <iostream>
+#include "utils/utils.hpp"
+
+template <class T>auto makeChunkData(const auto &panelGeometry) {
+  namespace views = std::ranges::views;
+
+  auto chunkSize = panelGeometry | views::transform([](const auto &pg) {
+                     return pg.centrePoints.rows();
+                   });
+  std::vector<size_t> chunkStart(chunkSize.size(), 0);
+  std::exclusive_scan(chunkSize.begin(), chunkSize.end(), chunkStart.begin(),
+                      0);
+  return std::pair{chunkStart, chunkSize};
+}
 
 Eigen::Array3d getFreeStream(double aoa, double Vinf) {
 
@@ -67,3 +81,109 @@ calc_panel_geometry(std::vector<PanelSet> &panel_sets) {
                     std::back_inserter(panelGeometryPair));
   return panelGeometryPair;
 }
+
+  
+
+std::pair<FlowParams, ReferenceGeom> 
+parse_param(const std::filesystem::path &fpath){
+  std::ifstream pFile(fpath);
+  if (!pFile.is_open()) {
+    std::cerr << "Error opening params file: " << fpath.string() << std::endl;
+  }
+  FlowParams flowParams = {0, 1, 1};
+  ReferenceGeom refGeom = {0};
+  bool haveaoa = false;
+  bool haveS = false;
+  std::string line;
+
+  while (std::getline(pFile, line)) {
+    // Remove anything after "//"
+    std::size_t pos = line.find("//");
+    if (pos != std::string::npos) {
+      line = line.substr(0, pos);
+    }
+
+    // Trim leading/trailing whitespace (simple approach)
+    // You can write a more robust trim if needed.
+    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+      line.erase(line.begin());
+    }
+    while (!line.empty() && (line.back() == ' ' || line.back() == '\t')) {
+      line.pop_back();
+    }
+
+    // Skip empty lines or lines that begin with '#'
+    if (line.empty() || line[0] == '#') {
+      continue;
+    }
+
+    // First valid numeric line -> aoa, second -> S
+    if (!haveaoa) {
+      print("aoa: ", line.c_str());
+      flowParams.aoa = std::atof(line.c_str());
+      haveaoa = true;
+    } else if (!haveS) {
+      refGeom.refArea = std::atof(line.c_str());
+      haveS = true;
+    }
+  }
+  pFile.close();
+  return std::make_pair(flowParams, refGeom);
+}
+std::pair<std::vector<FlowParams>, ReferenceGeom> 
+parse_param_batch(const std::filesystem::path &fpath) {
+  std::ifstream pFile(fpath);
+  if (!pFile.is_open()) {
+    std::cerr << "Error opening params file: " << fpath.string() << std::endl;
+  }
+  std::vector<FlowParams> flowParams;
+  ReferenceGeom refGeom = {0};
+  bool haveaoa = false;
+  bool haveS = false;
+  std::string line;
+
+  while (std::getline(pFile, line)) {
+    // Remove anything after "//"
+    std::size_t pos = line.find("//");
+    if (pos != std::string::npos) {
+      line = line.substr(0, pos);
+    }
+
+    // Trim leading/trailing whitespace (simple approach)
+    // You can write a more robust trim if needed.
+    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+      line.erase(line.begin());
+    }
+    while (!line.empty() && (line.back() == ' ' || line.back() == '\t')) {
+      line.pop_back();
+    }
+
+    // Skip empty lines or lines that begin with '#'
+    if (line.empty() || line[0] == '#') {
+      continue;
+    }
+
+    // First valid numeric line -> aoa, second -> S
+    if (!haveaoa) {
+      auto aoaS = split(line, " ");
+      std::ranges::copy(
+          aoaS | views::transform([](const std::string &aoa) -> double {
+            return std::atof(aoa.c_str());
+          }) | views::transform([](const auto &val) -> FlowParams {
+            return {val, 1, 1};
+          }),
+          std::back_inserter(flowParams));
+      haveaoa = true;
+    } else if (!haveS) {
+      refGeom.refArea = std::atof(line.c_str());
+      haveS = true;
+    }
+  }
+
+  pFile.close();
+  return std::make_pair(flowParams, refGeom);
+}
+
+  
+  
+

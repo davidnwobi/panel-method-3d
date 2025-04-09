@@ -150,8 +150,7 @@ postProcessBody(std::span<const PanelGeometryPair> panelGeometries,
         return pair.first.centrePoints.rows();
       });
   std::vector<size_t> chunkStart(chunkSize.size(), 0);
-  std::partial_sum(chunkSize.begin(), chunkSize.end() - 1,
-                   chunkStart.begin() + 1);
+  std::partial_sum(chunkSize.begin(), chunkSize.end() - 1, chunkStart.begin() + 1);
 
   auto chunkedDoublet =
       RANGE(chunkSize.size()) |
@@ -167,7 +166,7 @@ postProcessBody(std::span<const PanelGeometryPair> panelGeometries,
       });
   auto freeStream = getFreeStream(flowParams.aoa, flowParams.Vinf);
   auto computedVelocitiesView =
-      RANGE(panelGeometries.size()) | views::transform([&](std::size_t idx) {
+      RANGE(panelGeometries.size()) | std::views::transform([&](std::size_t idx) {
         return calculatePanelVelocities(panelGeometries[idx].first,
                                         chunkedDoublet[idx], chunkedSource[idx],
                                         freeStream);
@@ -183,4 +182,28 @@ postProcessBody(std::span<const PanelGeometryPair> panelGeometries,
   return results;
 }
 
+void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
+                   AeroResults &results) {
+
+  std::vector<std::string> headers = {"x",   "y",   "z",   "A",  "dCp",
+                                      "dVx", "dVy", "dVz", "dP", "dFx",
+                                      "dFy", "dFz", "mu"};
+  savetxt(outfile,
+          (Eigen::ArrayXXd(ppair.first.centrePoints.rows(), headers.size())
+               << ppair.first.centrePoints.col(0),
+           ppair.first.centrePoints.col(1), ppair.first.centrePoints.col(2),
+           ppair.first.areas, results.panelResults["dCp"],
+           results.panelResults["dVx"], results.panelResults["dVy"],
+           results.panelResults["dVz"], results.panelResults["dP"],
+           results.panelResults["dFx"], results.panelResults["dFy"],
+           results.panelResults["dFz"], results.panelResults["mu"])
+              .finished(),
+          " ", headers);
+}
+
+template
+void accumulateTotalPolars<std::vector<std::vector<AeroResults>>>(
+    std::string outdir,
+    std::vector<std::vector<AeroResults>>&& r
+);
 

@@ -7,9 +7,7 @@ Eigen::Array3d getFreeStream(double aoa, double Vinf);
 
   
 using namespace std::ranges;
-template <typename Derived>
-Derived rotate_2d_about_origin(const Eigen::MatrixBase<Derived> &points2d,
-                               double angle_d);
+
 void rotate_3d_about_origin(Eigen::Ref<Eigen::ArrayX3d> points3d,
                             double angle_d);
   
@@ -22,17 +20,16 @@ void align_wake_to_flow(std::vector<PanelSet> &panel_sets, double aoa);
 
 std::vector<PanelGeometryPair>
 calc_panel_geometry(std::vector<PanelSet> &panel_sets);
+
+
   
 
 
-template <class T>auto makeChunkData(const auto &panelGeometry) {
-
-  auto chunkSize = panelGeometry | views::transform([](const auto &pg) {
-                     return pg.centrePoints.rows();
-                   });
-  std::vector<size_t> chunkStart(chunkSize.size(), 0);
-  std::exclusive_scan(chunkSize.begin(), chunkSize.end(), chunkStart.begin(),
-                      0);
-  return std::pair{chunkStart, chunkSize};
-}
  
+
+
+std::pair<FlowParams, ReferenceGeom> parse_param(const std::filesystem::path &fpath);
+  
+std::pair<std::vector<FlowParams>, ReferenceGeom> 
+parse_param_batch(const std::filesystem::path &fpath);
+  

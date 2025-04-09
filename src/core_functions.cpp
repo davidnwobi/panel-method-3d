@@ -1,0 +1,53 @@
+#include "aerocalcs/aerocalcsingle.hpp"
+#include "compTask.hpp"
+#include "mat_reader/mat_reader.hpp"
+#include "solver/gmres_solver.hpp"
+#include "surface/surface_panel.hpp"
+#include "surface/surface_reader.hpp"
+#include "surface/wake_panel.hpp"
+#include "utils/utils.hpp"
+#include <Eigen/Core>
+#include <cmath>
+#include <filesystem>
+#include <string>
+#include <utility>
+#include <vector>
+#include "lhs.hpp"
+#include "rhs.hpp"
+#include "post_processing.hpp"
+#include "helpers.hpp"
+
+std::vector<AeroResults> run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
+                  const std::string &inputFile, const std::string &outputFile,
+                  bool rotate_wake) {
+
+  Eigen::Array3d freeStream = getFreeStream(flowParams.aoa, 1);
+  auto pset = readConvertedComponentsFromFile(inputFile);
+  if (rotate_wake) {
+    print("Aligning Wake\n");
+    align_wake_to_flow(pset, flowParams.aoa);
+    ;
+  }
+  print("Wake Surface: ", pset[0].wake.mPoints.rows());
+  auto panelGeometries = calc_panel_geometry(pset);
+  print("Wake Size: ", panelGeometries[0].second.centrePoints.rows());
+  auto evalPoints = create_eval_points(panelGeometries);
+  auto compTaskPairs = makeComputeTaskPairs(panelGeometries, evalPoints);
+  auto out =
+      assembleRhs(compTaskPairs, panelGeometries, evalPoints, freeStream);
+  Eigen::VectorXd sourceStrength = std::move(out.second);
+  Eigen::VectorXd rhs = std::move(out.first);
+  Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
+  Eigen::ArrayXd doubletStrength = GMRESSolver().solve(lhs, rhs);
+  savetxt("solution", doubletStrength);
+  auto results = postProcessBody(panelGeometries, doubletStrength,
+                                 sourceStrength, flowParams, refGeom);
+
+  for (auto i : RANGE(results.size())) {
+    std::string outfile = outputFile + "/bodydata_S" + std::to_string(i) +
+                          "_aoa" + std::to_string((int)flowParams.aoa) + ".dat";
+    writeBodyData(outfile, panelGeometries[i], results[i]);
+    print("Aoa: ", results[i].polars["aoa"], "CL: ", results[i].polars["CL"]);
+  }
+  return results;
+}
