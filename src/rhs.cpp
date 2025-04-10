@@ -1,10 +1,10 @@
+#include "infMat.hpp"
+#include "singularity/const_source.hpp"
 #include <Eigen/Core>
-#include <ranges>
 #include <compTask.hpp>
 #include <concepts.hpp>
+#include <ranges>
 #include <utility>
-#include "singularity/const_source.hpp"
-#include "infMat.hpp"
 
 std::pair<Eigen::VectorXd, Eigen::VectorXd>
 assembleRhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,

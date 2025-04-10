@@ -23,7 +23,7 @@ Eigen::ArrayXd DoubletP::calcInfluenceImpl(const ComputeTask &compTask) {
       term1.colwise().begin(),
       [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
           const Eigen::Ref<const Eigen::RowVector3d> &node2) {
-        return J12_OLD(compTask.points, node1, node2);
+        return J12(compTask.points, node1, node2);
       });
   apply_adjacent_circular(
       fPoints.rowwise().begin(), fPoints.rowwise().end(), norms.begin(),
@@ -37,10 +37,7 @@ Eigen::ArrayXd DoubletP::calcInfluenceImpl(const ComputeTask &compTask) {
     }
   }
   // print("facePoints: ", compTask.points.topRows(10));
-  ArrayXi onQuad = (baryCheck(compTask.points, fPoints.row(0), fPoints.row(1),
-                              fPoints.row(2)) ||
-                    baryCheck(compTask.points, fPoints.row(0), fPoints.row(2),
-                              fPoints.row(3)));
+
   ArrayXd inf = -1 / (4 * std::numbers::pi_v<double>)*((term1).rowwise().sum());
   return inf;
 }

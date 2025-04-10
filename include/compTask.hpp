@@ -3,8 +3,8 @@
 #include "evalPoints.hpp"
 #include "panel_geo/panel_geo.hpp"
 #include <Eigen/Core>
+#include <span>
 #include <vector>
-#include  <span>
 
 struct ComputeTask {
   //
@@ -37,6 +37,18 @@ ComputeTask createInfluenceComputeTask(const PanelGeometry<Surface> &panelGeo,
   return compTask;
 }
 
+template <SurfaceType Surface>
+void createInfluenceComputeTask(ComputeTask &compTask,
+                                const PanelGeometry<Surface> &panelGeo,
+                                const EvalPoints<double> &evalPoints,
+                                std::size_t faceIdx) {
+
+  compTask.face.faceIdx = faceIdx;
+  compTask.face.centrePoint = panelGeo.centrePoints.row(faceIdx);
+  compTask.face.area = panelGeo.areas(faceIdx);
+  compTask.face.points = panelGeo.localFaceVertices[faceIdx];
+  compTask.points = panelGeo.convertToLocal(faceIdx, evalPoints.mEvalPoints);
+}
 
 ComputeTaskPair makeComputeTasksPairImpl(const PanelGeometryPair &panelGeometry,
                                          const EvalPoints<double> &evalPoints);
@@ -44,5 +56,3 @@ ComputeTaskPair makeComputeTasksPairImpl(const PanelGeometryPair &panelGeometry,
 std::vector<ComputeTaskPair>
 makeComputeTaskPairs(std::span<PanelGeometryPair> panelGeometries,
                      const EvalPoints<double> &evalPoints);
-
-  

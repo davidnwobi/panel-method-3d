@@ -136,7 +136,7 @@ Eigen::ArrayXd SourceP::calcInfluenceImpl(const ComputeTask &compTask) {
       part2t.colwise().begin(),
       [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
           const Eigen::Ref<const Eigen::RowVector3d> &node2) {
-        return J12_OLD(compTask.points, node1, node2);
+        return J12(compTask.points, node1, node2);
       });
   apply_adjacent_circular(
       fPoints.rowwise().begin(), fPoints.rowwise().end(), norms.begin(),

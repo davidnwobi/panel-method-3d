@@ -1,16 +1,12 @@
 ﻿#include "aerocalcs/aerocalcsingle.hpp"
+#include "core_functions.hpp"
+#include "helpers.hpp"
+#include "post_processing.hpp"
 #include <algorithm>
 #include <cmath>
 #include <ranges>
 #include <string>
 #include <vector>
-#include "helpers.hpp"
-#include "post_processing.hpp"
-#include "core_functions.hpp"
-
-
-
-
 
 int main(int argc, char *argv[]) {
   std::string inputFile;

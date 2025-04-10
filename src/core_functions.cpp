@@ -1,6 +1,10 @@
 #include "aerocalcs/aerocalcsingle.hpp"
 #include "compTask.hpp"
+#include "helpers.hpp"
+#include "lhs.hpp"
 #include "mat_reader/mat_reader.hpp"
+#include "post_processing.hpp"
+#include "rhs.hpp"
 #include "solver/gmres_solver.hpp"
 #include "surface/surface_panel.hpp"
 #include "surface/surface_reader.hpp"
@@ -12,14 +16,12 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "lhs.hpp"
-#include "rhs.hpp"
-#include "post_processing.hpp"
-#include "helpers.hpp"
 
-std::vector<AeroResults> run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
-                  const std::string &inputFile, const std::string &outputFile,
-                  bool rotate_wake) {
+std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
+                                      const ReferenceGeom &refGeom,
+                                      const std::string &inputFile,
+                                      const std::string &outputFile,
+                                      bool rotate_wake) {
 
   Eigen::Array3d freeStream = getFreeStream(flowParams.aoa, 1);
   auto pset = readConvertedComponentsFromFile(inputFile);
@@ -32,12 +34,8 @@ std::vector<AeroResults> run_analysis(const FlowParams &flowParams, const Refere
   auto panelGeometries = calc_panel_geometry(pset);
   print("Wake Size: ", panelGeometries[0].second.centrePoints.rows());
   auto evalPoints = create_eval_points(panelGeometries);
-  auto compTaskPairs = makeComputeTaskPairs(panelGeometries, evalPoints);
-  auto out =
-      assembleRhs(compTaskPairs, panelGeometries, evalPoints, freeStream);
-  Eigen::VectorXd sourceStrength = std::move(out.second);
-  Eigen::VectorXd rhs = std::move(out.first);
-  Eigen::MatrixXd lhs = assembleLhs(compTaskPairs, panelGeometries, evalPoints);
+  auto [lhs, rhs, sourceStrength] =
+      assembleLhs(panelGeometries, evalPoints, freeStream);
   Eigen::ArrayXd doubletStrength = GMRESSolver().solve(lhs, rhs);
   savetxt("solution", doubletStrength);
   auto results = postProcessBody(panelGeometries, doubletStrength,

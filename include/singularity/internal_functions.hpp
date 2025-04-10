@@ -15,14 +15,6 @@ Eigen::ArrayXd Q12(const Eigen::Ref<const Eigen::ArrayX3d> &points,
                    const Eigen::Ref<const Eigen::Array3d> &node1,
                    const Eigen::Ref<const Eigen::Array3d> &node2);
 
-Eigen::ArrayXd J12_OLD(const Eigen::Ref<const Eigen::ArrayX3d> &points,
-                       const Eigen::Ref<const Eigen::Array3d> &node1,
-                       const Eigen::Ref<const Eigen::Array3d> &node2);
-
 Eigen::ArrayXd J12(const Eigen::Ref<const Eigen::ArrayX3d> &points,
                    const Eigen::Ref<const Eigen::Array3d> &node1,
                    const Eigen::Ref<const Eigen::Array3d> &node2);
-Eigen::ArrayXi baryCheck(const Eigen::Ref<const Eigen::ArrayX3d> &points,
-                         const Eigen::Ref<const Eigen::Array3d> &A,
-                         const Eigen::Ref<const Eigen::Array3d> &B,
-                         const Eigen::Ref<const Eigen::Array3d> &C);
