@@ -107,54 +107,88 @@
 //   s12_1; return y.atan2(x);
 // }
 
+// Eigen::ArrayXd SourceP::calcInfluenceImpl(const ComputeTask &compTask) {
+//
+//   const auto &fPoints = compTask.face.points;
+//   using namespace Eigen;
+//
+//   ArrayXXd part1t1(compTask.points.rows(), fPoints.rows());
+//   ArrayXXd part1t2(compTask.points.rows(), fPoints.rows());
+//   ArrayXXd part2t(compTask.points.rows(), fPoints.rows());
+//   ArrayXd norms(4);
+//
+//   apply_adjacent_circular(
+//       fPoints.rowwise().begin(), fPoints.rowwise().end(),
+//       part1t1.colwise().begin(),
+//       [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
+//           const Eigen::Ref<const Eigen::RowVector3d> &node2) {
+//         return R12(compTask.points, node1, node2);
+//       });
+//   apply_adjacent_circular(
+//       fPoints.rowwise().begin(), fPoints.rowwise().end(),
+//       part1t2.colwise().begin(),
+//       [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
+//           const Eigen::Ref<const Eigen::RowVector3d> &node2) {
+//         return Q12(compTask.points, node1, node2);
+//       });
+//   apply_adjacent_circular(
+//       fPoints.rowwise().begin(), fPoints.rowwise().end(),
+//       part2t.colwise().begin(),
+//       [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
+//           const Eigen::Ref<const Eigen::RowVector3d> &node2) {
+//         return J12(compTask.points, node1, node2);
+//       });
+//   apply_adjacent_circular(
+//       fPoints.rowwise().begin(), fPoints.rowwise().end(), norms.begin(),
+//       [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
+//           const Eigen::Ref<const Eigen::RowVector3d> &node2) {
+//         return (node2 - node1).matrix().norm();
+//       });
+//   for (int i = 0; i < 4; i++) {
+//     if (norms(i) < 1e-10) {
+//       part1t1.col(i) = Eigen::ArrayXd::Zero(part1t1.rows());
+//       part1t2.col(i) = Eigen::ArrayXd::Zero(part1t2.rows());
+//       part2t.col(i) = Eigen::ArrayXd::Zero(part2t.rows());
+//     }
+//   }
+//
+//   ArrayXd term1 = (part1t1 * part1t2).rowwise().sum();
+//   ArrayXd term2 = -compTask.points.col(2).abs() * (part2t.rowwise().sum());
+//   return -1 / (4 * std::numbers::pi_v<double>)*(-term1 + term2);
+// }
+//
 Eigen::ArrayXd SourceP::calcInfluenceImpl(const ComputeTask &compTask) {
 
   const auto &fPoints = compTask.face.points;
+  int sides = fPoints.rows();
   using namespace Eigen;
 
-  ArrayXXd part1t1(compTask.points.rows(), fPoints.rows());
-  ArrayXXd part1t2(compTask.points.rows(), fPoints.rows());
-  ArrayXXd part2t(compTask.points.rows(), fPoints.rows());
-  ArrayXd norms(4);
+  ArrayXd norms(sides);
+  for (Eigen::Index i = 0; i < sides; i++) {
+    norms[i] = (fPoints.row(i) - fPoints.row((i + 1) % sides)).matrix().norm();
+  }
+  ArrayXd infMat(compTask.points.rows());
+  ArrayXd temp(compTask.points.rows());
+  infMat.setZero();
 
-  apply_adjacent_circular(
-      fPoints.rowwise().begin(), fPoints.rowwise().end(),
-      part1t1.colwise().begin(),
-      [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
-          const Eigen::Ref<const Eigen::RowVector3d> &node2) {
-        return R12(compTask.points, node1, node2);
-      });
-  apply_adjacent_circular(
-      fPoints.rowwise().begin(), fPoints.rowwise().end(),
-      part1t2.colwise().begin(),
-      [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
-          const Eigen::Ref<const Eigen::RowVector3d> &node2) {
-        return Q12(compTask.points, node1, node2);
-      });
-  apply_adjacent_circular(
-      fPoints.rowwise().begin(), fPoints.rowwise().end(),
-      part2t.colwise().begin(),
-      [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
-          const Eigen::Ref<const Eigen::RowVector3d> &node2) {
-        return J12(compTask.points, node1, node2);
-      });
-  apply_adjacent_circular(
-      fPoints.rowwise().begin(), fPoints.rowwise().end(), norms.begin(),
-      [&](const Eigen::Ref<const Eigen::RowVector3d> &node1,
-          const Eigen::Ref<const Eigen::RowVector3d> &node2) {
-        return (node2 - node1).matrix().norm();
-      });
-  for (int i = 0; i < 4; i++) {
-    if (norms(i) < 1e-10) {
-      part1t1.col(i) = Eigen::ArrayXd::Zero(part1t1.rows());
-      part1t2.col(i) = Eigen::ArrayXd::Zero(part1t2.rows());
-      part2t.col(i) = Eigen::ArrayXd::Zero(part2t.rows());
+  for (Eigen::Index i = 0; i < fPoints.rows(); i++) {
+    if (norms[i] > 1e-10) {
+      infMat +=
+          -R12(compTask.points, fPoints.row(i), fPoints.row((i + 1) % sides)) *
+          Q12(compTask.points, fPoints.row(i), fPoints.row((i + 1) % sides));
     }
   }
 
-  ArrayXd term1 = (part1t1 * part1t2).rowwise().sum();
-  ArrayXd term2 = -compTask.points.col(2).abs() * (part2t.rowwise().sum());
-  return -1 / (4 * std::numbers::pi_v<double>)*(-term1 + term2);
+  temp.setZero();
+  for (Eigen::Index i = 0; i < sides; i++) {
+    if (norms[i] > 1e-10) {
+      temp +=
+          J12(compTask.points, fPoints.row(i), fPoints.row((i + 1) % sides));
+    }
+  }
+  infMat += -compTask.points.col(2).abs() * temp;
+  infMat *= -1 / (4 * std::numbers::pi_v<double>);
+  return infMat;
 }
 
 Eigen::ArrayXd SourceP::calcInfluenceFarImpl(const ComputeTask &compTask) {

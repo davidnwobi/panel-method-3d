@@ -187,6 +187,15 @@ Eigen::ArrayX3d PanelGeometry<T>::convertToLocal(int faceIdx,
 
   return (conversionMatrices[faceIdx] * (points.transpose().matrix()))
       .transpose();
+  // const Eigen::Index m = points.rows();
+  // const Eigen::Index n = points.cols();
+  // Eigen::ArrayX3d out(m, n);
+  //
+  // for (Eigen::Index i = 0; i < m; i++) {
+  //   out.row(i).transpose() =
+  //       (conversionMatrices[faceIdx] * points.row(i).transpose());
+  // }
+  // return out;
 }
 
 template <SurfaceType T>

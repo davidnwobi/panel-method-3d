@@ -1,6 +1,7 @@
 #include "utils/utils.hpp"
 #include <Eigen/Core>
 #include <algorithm>
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -132,5 +133,16 @@ std::string demangle(const char *mangledName) {
 Eigen::ArrayXd
 rowwiseDotProduct(const Eigen::Ref<const Eigen::ArrayXXd> &a1,
                   const Eigen::Ref<const Eigen::RowVectorXd> &a2) {
-  return (a1.rowwise() * a2.array()).rowwise().sum();
+
+  const Eigen::Index m = a1.rows();
+  const Eigen::Index n = a1.cols();
+
+  Eigen::ArrayXd out(m);
+  out.setZero();
+  for (Eigen::Index j = 0; j < n; j++) {
+    for (Eigen::Index i = 0; i < m; i++) {
+      out[i] += a1(i, j) * a2[j];
+    }
+  }
+  return out;
 }

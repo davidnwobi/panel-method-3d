@@ -57,11 +57,19 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
 #endif
 }
 
+template <typename Derived>
+double sparsity(const Eigen::ArrayBase<Derived> &mat) {
+  return ((double)(mat.abs() < 1e-6).count()) /
+         ((double)(mat.rows() * mat.cols()));
+}
 std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
 assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
             const EvalPoints<double> &evalPoints,
             const Eigen::Ref<Eigen::Array3d> &freeStream) {
 
+#if (BENCHMARKING == 0)
+  print(__PRETTY_FUNCTION__);
+#endif
   std::size_t mDims = evalPoints.mEvalPoints.rows();
   Eigen::MatrixXd lhs(mDims, mDims);
   Eigen::VectorXd rhs(mDims);
@@ -80,10 +88,10 @@ assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
     sourceStrength.middleRows(iPoints, cols) =
         rowwiseDotProduct(surf.normalVectors, freeStream);
     rhs += -sourceInfluenceMat * sourceStrength.middleRows(iPoints, cols);
-    print(cols);
     iPoints += cols;
   }
-  savetxt("lhs.txt", lhs);
-
+#if (BENCHMARKING == 0)
+  print("OUT OF: ", __PRETTY_FUNCTION__);
+#endif
   return std::make_tuple(lhs, rhs, sourceStrength);
 }
