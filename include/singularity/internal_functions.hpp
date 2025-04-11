@@ -18,3 +18,10 @@ Eigen::ArrayXd Q12(const Eigen::Ref<const Eigen::ArrayX3d> &points,
 Eigen::ArrayXd J12(const Eigen::Ref<const Eigen::ArrayX3d> &points,
                    const Eigen::Ref<const Eigen::Array3d> &node1,
                    const Eigen::Ref<const Eigen::Array3d> &node2);
+
+void R12_Q12_J12(Eigen::Ref<Eigen::ArrayXd> R12_,
+                 Eigen::Ref<Eigen::ArrayXd> Q12_,
+                 Eigen::Ref<Eigen::ArrayXd> J12_,
+                 const Eigen::Ref<const Eigen::ArrayX3d> &points,
+                 const Eigen::Ref<const Eigen::Array3d> &node1,
+                 const Eigen::Ref<const Eigen::Array3d> &node2);

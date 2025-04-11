@@ -170,27 +170,60 @@ Eigen::ArrayXd SourceP::calcInfluenceImpl(const ComputeTask &compTask) {
   ArrayXd infMat(compTask.points.rows());
   ArrayXd temp(compTask.points.rows());
   infMat.setZero();
+  temp.setZero();
 
+  ArrayXd R12_(compTask.points.rows());
+  ArrayXd Q12_(compTask.points.rows());
+  ArrayXd J12_(compTask.points.rows());
   for (Eigen::Index i = 0; i < fPoints.rows(); i++) {
     if (norms[i] > 1e-10) {
-      infMat +=
-          -R12(compTask.points, fPoints.row(i), fPoints.row((i + 1) % sides)) *
-          Q12(compTask.points, fPoints.row(i), fPoints.row((i + 1) % sides));
+      R12_Q12_J12(R12_, Q12_, J12_, compTask.points, fPoints.row(i),
+                  fPoints.row((i + 1) % sides));
+      infMat += -R12_ * Q12_;
+      temp += J12_;
     }
   }
 
-  temp.setZero();
-  for (Eigen::Index i = 0; i < sides; i++) {
-    if (norms[i] > 1e-10) {
-      temp +=
-          J12(compTask.points, fPoints.row(i), fPoints.row((i + 1) % sides));
-    }
-  }
   infMat += -compTask.points.col(2).abs() * temp;
   infMat *= -1 / (4 * std::numbers::pi_v<double>);
   return infMat;
 }
 
+// Eigen::ArrayXd SourceP::calcInfluenceImpl(const ComputeTask &compTask) {
+//
+//   const auto &fPoints = compTask.face.points;
+//   int sides = fPoints.rows();
+//   using namespace Eigen;
+//
+//   ArrayXd norms(sides);
+//   for (Eigen::Index i = 0; i < sides; i++) {
+//     norms[i] = (fPoints.row(i) - fPoints.row((i + 1) %
+//     sides)).matrix().norm();
+//   }
+//   ArrayXd infMat(compTask.points.rows());
+//   ArrayXd temp(compTask.points.rows());
+//   infMat.setZero();
+//
+//   for (Eigen::Index i = 0; i < fPoints.rows(); i++) {
+//     if (norms[i] > 1e-10) {
+//       infMat +=
+//           -R12(compTask.points, fPoints.row(i), fPoints.row((i + 1) % sides))
+//           * Q12(compTask.points, fPoints.row(i), fPoints.row((i + 1) %
+//           sides));
+//     }
+//   }
+//
+//   temp.setZero();
+//   for (Eigen::Index i = 0; i < sides; i++) {
+//     if (norms[i] > 1e-10) {
+//       temp +=
+//           J12(compTask.points, fPoints.row(i), fPoints.row((i + 1) % sides));
+//     }
+//   }
+//   infMat += -compTask.points.col(2).abs() * temp;
+//   infMat *= -1 / (4 * std::numbers::pi_v<double>);
+//   return infMat;
+// }
 Eigen::ArrayXd SourceP::calcInfluenceFarImpl(const ComputeTask &compTask) {
   return SourceFar::calcInfluenceImpl(compTask);
 }
