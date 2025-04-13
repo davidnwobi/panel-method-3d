@@ -25,17 +25,17 @@ TEST(VALIDATION_WING, VALIDATION_WING) {
   auto pset = readConvertedComponentsFromFile(filePath)[0];
   PanelGeometry<SurfacePanel> body(pset.body);
   PanelGeometry<SurfacePanel> wake(pset.wake);
-  Eigen::ArrayX3d surfacePanelInfo =
+  Eigen::ArrayX3f surfacePanelInfo =
       vMergeRecursive(std::move(body.centrePoints),
                       std::move(body.tangentXVectors), body.tangentYVectors,
                       body.normalVectors, body.areas.replicate<1, 3>().eval())
           .eval();
-  Eigen::ArrayX3d wakePanelInfo =
+  Eigen::ArrayX3f wakePanelInfo =
       vMergeRecursive(std::move(wake.centrePoints),
                       std::move(wake.tangentXVectors), wake.tangentYVectors,
                       body.normalVectors, wake.areas.replicate<1, 3>().eval())
           .eval();
-  Eigen::ArrayX3d surfacePanelInfoComp =
+  Eigen::ArrayX3f surfacePanelInfoComp =
       FileReaderFactory::make_file_reader("dat", " ", false)
           ->read_data(std::string(testDataLoc) +
                       "/test_case_validation_wing/surfacePanelInfo.txt");
@@ -45,7 +45,7 @@ TEST(VALIDATION_WING, VALIDATION_WING) {
           (surfacePanelInfoComp - surfacePanelInfo).rowwise().norm().sum()) <
       1e-10);
 
-  Eigen::ArrayX3d wakePanelInfoComp =
+  Eigen::ArrayX3f wakePanelInfoComp =
       FileReaderFactory::make_file_reader("dat", " ", false)
           ->read_data(std::string(testDataLoc) +
                       "/test_case_validation_wing/wakePanelInfo.txt");

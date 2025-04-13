@@ -4,7 +4,7 @@
 
 using Octree = pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>;
 
-inline auto convertMat2Cloud(const Eigen::ArrayX3d &mat) {
+inline auto convertMat2Cloud(const Eigen::ArrayX3f &mat) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   cloud->width = mat.rows();
   cloud->height = 1;
@@ -17,10 +17,10 @@ inline auto convertMat2Cloud(const Eigen::ArrayX3d &mat) {
   return cloud;
 }
 
-inline auto createSearchPoints(const Eigen::ArrayX3d &mat) {
+inline auto createSearchPoints(const Eigen::ArrayX3f &mat) {
   std::vector<pcl::PointXYZ> searchPoints;
   searchPoints.reserve(mat.rows());
-  auto createPoints = [](const Eigen::RowVector3d &row) {
+  auto createPoints = [](const Eigen::RowVector3f &row) {
     pcl::PointXYZ out;
     out.x = row(0);
     out.y = row(1);
@@ -34,13 +34,13 @@ inline auto createSearchPoints(const Eigen::ArrayX3d &mat) {
 
 inline auto queryOctree(const Octree &octree,
                         const std::vector<pcl::PointXYZ> &searchPoints,
-                        const Eigen::ArrayXd &searchRadius) {
+                        const Eigen::ArrayXf &searchRadius) {
   std::vector<std::vector<std::size_t>> neighbours;
   neighbours.reserve(searchPoints.size());
 
   std::transform(searchPoints.begin(), searchPoints.end(), searchRadius.begin(),
                  std::back_inserter(neighbours),
-                 [octree](const pcl::PointXYZ &searchPoint, double radius) {
+                 [octree](const pcl::PointXYZ &searchPoint, float radius) {
                    std::vector<int> pointIdxRadiusSearch;
                    std::vector<float> pointRadiusSquaredDistance;
                    octree.radiusSearch(searchPoint, radius,

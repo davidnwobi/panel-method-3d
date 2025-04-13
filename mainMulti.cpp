@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     std::ranges::copy(flowParams | views::transform([](const auto &flowParams) {
                         return flowParams.aoa;
                       }),
-                      std::ostream_iterator<double>(std::cout, " "));
+                      std::ostream_iterator<float>(std::cout, " "));
     auto resultsView =
         flowParams | views::transform([&](const auto &flowParams) {
           return run_analysis(flowParams, refGeom, inputFile, outputFile,

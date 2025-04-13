@@ -6,26 +6,26 @@
 #include <ranges>
 #include <utility>
 
-std::pair<Eigen::VectorXd, Eigen::VectorXd>
+std::pair<Eigen::VectorXf, Eigen::VectorXf>
 assembleRhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
                 const PanelGeometry<SurfacePanel> &surfacePanelGeo,
-                const EvalPoints<double> &evalPoints,
-                const Eigen::Ref<Eigen::Array3d> &freeStream) {
+                const EvalPoints<float> &evalPoints,
+                const Eigen::Ref<Eigen::Array3f> &freeStream) {
 
   std::size_t evalDims = evalPoints.mEvalPoints.rows();
   std::size_t surfDims = surfacePanelCompTasks.size();
-  Eigen::MatrixXd sourceInfluenceMat = makeInfluenceMatrix<SourceP, true>(
+  Eigen::MatrixXf sourceInfluenceMat = makeInfluenceMatrix<SourceP, true>(
       evalDims, surfDims, surfacePanelCompTasks);
-  Eigen::VectorXd sourceStrength =
+  Eigen::VectorXf sourceStrength =
       rowwiseDotProduct(surfacePanelGeo.normalVectors, freeStream);
   return {-(sourceInfluenceMat * sourceStrength), sourceStrength};
 }
 
-std::pair<Eigen::VectorXd, Eigen::VectorXd>
+std::pair<Eigen::VectorXf, Eigen::VectorXf>
 assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
             std::span<const PanelGeometryPair> panelGeometries,
-            const EvalPoints<double> &evalPoints,
-            const Eigen::Ref<Eigen::Array3d> &freeStream) {
+            const EvalPoints<float> &evalPoints,
+            const Eigen::Ref<Eigen::Array3f> &freeStream) {
 
   auto rhsView =
       RANGE(compTaskPairs.size()) | views::transform([&](std::size_t idx) {
@@ -35,10 +35,10 @@ assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
       });
 
   std::size_t mDims = evalPoints.mEvalPoints.rows();
-  Eigen::VectorXd rhs(mDims);
+  Eigen::VectorXf rhs(mDims);
 
   rhs.setZero();
-  Eigen::VectorXd sourceStrength(mDims);
+  Eigen::VectorXf sourceStrength(mDims);
   std::size_t iPoints = 0;
   std::ranges::for_each(rhsView, [&](const auto &pts) {
     rhs += pts.first;

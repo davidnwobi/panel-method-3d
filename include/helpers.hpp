@@ -3,19 +3,19 @@
 #include "surface/surface_reader.hpp"
 #include <numeric>
 #include <ranges>
-Eigen::Array3d getFreeStream(double aoa, double Vinf);
+Eigen::Array3f getFreeStream(float aoa, float Vinf);
 
   
 using namespace std::ranges;
 
-void rotate_3d_about_origin(Eigen::Ref<Eigen::ArrayX3d> points3d,
-                            double angle_d);
+void rotate_3d_about_origin(Eigen::Ref<Eigen::ArrayX3f> points3d,
+                            float angle_d);
   
 
-void rotate_points_about_start(Eigen::Ref<Eigen::ArrayX3d> points3d,
-                               double angle_d);
+void rotate_points_about_start(Eigen::Ref<Eigen::ArrayX3f> points3d,
+                               float angle_d);
   
-void align_wake_to_flow(std::vector<PanelSet> &panel_sets, double aoa);
+void align_wake_to_flow(std::vector<PanelSet> &panel_sets, float aoa);
   
 
 std::vector<PanelGeometryPair>

@@ -7,21 +7,21 @@ template <typename T> int sgn_(T val) {
     return -1; // negative
   return 0;    // zero
 }
-Eigen::ArrayXd R12(const Eigen::Ref<const Eigen::ArrayX3d> &points,
-                   const Eigen::Ref<const Eigen::Array3d> &node1,
-                   const Eigen::Ref<const Eigen::Array3d> &node2);
+Eigen::ArrayXf R12(const Eigen::Ref<const Eigen::ArrayX3f> &points,
+                   const Eigen::Ref<const Eigen::Array3f> &node1,
+                   const Eigen::Ref<const Eigen::Array3f> &node2);
 
-Eigen::ArrayXd Q12(const Eigen::Ref<const Eigen::ArrayX3d> &points,
-                   const Eigen::Ref<const Eigen::Array3d> &node1,
-                   const Eigen::Ref<const Eigen::Array3d> &node2);
+Eigen::ArrayXf Q12(const Eigen::Ref<const Eigen::ArrayX3f> &points,
+                   const Eigen::Ref<const Eigen::Array3f> &node1,
+                   const Eigen::Ref<const Eigen::Array3f> &node2);
 
-Eigen::ArrayXd J12(const Eigen::Ref<const Eigen::ArrayX3d> &points,
-                   const Eigen::Ref<const Eigen::Array3d> &node1,
-                   const Eigen::Ref<const Eigen::Array3d> &node2);
+Eigen::ArrayXf J12(const Eigen::Ref<const Eigen::ArrayX3f> &points,
+                   const Eigen::Ref<const Eigen::Array3f> &node1,
+                   const Eigen::Ref<const Eigen::Array3f> &node2);
 
-void R12_Q12_J12(Eigen::Ref<Eigen::ArrayXd> R12_,
-                 Eigen::Ref<Eigen::ArrayXd> Q12_,
-                 Eigen::Ref<Eigen::ArrayXd> J12_,
-                 const Eigen::Ref<const Eigen::ArrayX3d> &points,
-                 const Eigen::Ref<const Eigen::Array3d> &node1,
-                 const Eigen::Ref<const Eigen::Array3d> &node2);
+void R12_Q12_J12(Eigen::Ref<Eigen::ArrayXf> R12_,
+                 Eigen::Ref<Eigen::ArrayXf> Q12_,
+                 Eigen::Ref<Eigen::ArrayXf> J12_,
+                 const Eigen::Ref<const Eigen::ArrayX3f> &points,
+                 const Eigen::Ref<const Eigen::Array3f> &node1,
+                 const Eigen::Ref<const Eigen::Array3f> &node2);

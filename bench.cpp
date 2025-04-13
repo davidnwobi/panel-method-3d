@@ -3,7 +3,7 @@
 #include <memory>
 #include <benchmark/benchmark.h>
 
-static const double MULTIPLIER = 10;
+static const float MULTIPLIER = 10;
 using ul = long long;
 
 template<typename PlainObjectType, typename T>
@@ -26,17 +26,17 @@ void* get_aligned_mem(size_t nbytes){
     return raw_ptr;
 }
 
-auto free_deleter = [](double* p) {
+auto free_deleter = [](float* p) {
     std::free(p);
 };
 
 template<typename Derived>
 inline auto expr1(const Eigen::ArrayBase<Derived>& d){
-    return d*100/((double) MULTIPLIER);
+    return d*100/((float) MULTIPLIER);
 }
 template<typename Derived>
 inline auto expr2(const Eigen::ArrayBase<Derived>& d){
-    return d.sin()/((double) MULTIPLIER);
+    return d.sin()/((float) MULTIPLIER);
 }
 template<typename Derived>
 inline auto copyinto(const Eigen::ArrayBase<Derived>& d){
@@ -44,63 +44,63 @@ inline auto copyinto(const Eigen::ArrayBase<Derived>& d){
 }
 
 template<typename Derived>
-inline Eigen::ArrayXd expr1_2(const Eigen::ArrayBase<Derived>& d){
-    return d*100/((double) MULTIPLIER);
+inline Eigen::ArrayXf expr1_2(const Eigen::ArrayBase<Derived>& d){
+    return d*100/((float) MULTIPLIER);
 }
 template<typename Derived>
-inline Eigen::ArrayXd expr2_2(const Eigen::ArrayBase<Derived>& d){
-    return d.sin()/((double) MULTIPLIER);
+inline Eigen::ArrayXf expr2_2(const Eigen::ArrayBase<Derived>& d){
+    return d.sin()/((float) MULTIPLIER);
 }
 template<typename Derived>
-inline Eigen::ArrayXd copyinto_2(const Eigen::ArrayBase<Derived>& d){
+inline Eigen::ArrayXf copyinto_2(const Eigen::ArrayBase<Derived>& d){
     return d*10.0/50.0 * expr1_2(d) * expr2_2(d);
 }
 
-double bench_1(ul no_panels) {
+float bench_1(ul no_panels) {
     ul n = no_panels;
-    double* raw_ptr = (double*) get_aligned_mem<double, 32>(sizeof(double)*n);
-    std::unique_ptr<double, decltype(free_deleter)> data(raw_ptr, free_deleter);
-    auto test = init<Eigen::ArrayXd, double>(data.get(), n);
-    Eigen::ArrayXd test2 = Eigen::ArrayXd::Random(no_panels/2);
+    float* raw_ptr = (float*) get_aligned_mem<float, 32>(sizeof(float)*n);
+    std::unique_ptr<float, decltype(free_deleter)> data(raw_ptr, free_deleter);
+    auto test = init<Eigen::ArrayXf, float>(data.get(), n);
+    Eigen::ArrayXf test2 = Eigen::ArrayXf::Random(no_panels/2);
     resize(test, data.get(), no_panels/2);
     test = copyinto(test2);
 
-    double* raw_ptr_2 = (double*) get_aligned_mem<double, 32>(sizeof(double)*n);
-    std::unique_ptr<double, decltype(free_deleter)> data_2(raw_ptr_2, free_deleter);
-    auto test3 = init<Eigen::ArrayXd, double>(data_2.get(), n/2);
+    float* raw_ptr_2 = (float*) get_aligned_mem<float, 32>(sizeof(float)*n);
+    std::unique_ptr<float, decltype(free_deleter)> data_2(raw_ptr_2, free_deleter);
+    auto test3 = init<Eigen::ArrayXf, float>(data_2.get(), n/2);
     test3 = copyinto(test);
     return test3.sum();
 }
-double bench_1_2(ul no_panels) {
+float bench_1_2(ul no_panels) {
     ul n = no_panels;
-    double* raw_ptr = (double*) get_aligned_mem<double, 32>(sizeof(double)*n);
-    std::unique_ptr<double, decltype(free_deleter)> data(raw_ptr, free_deleter);
-    auto test = init<Eigen::ArrayXd, double>(data.get(), n);
-    Eigen::ArrayXd test2 = Eigen::ArrayXd::Random(no_panels/2);
+    float* raw_ptr = (float*) get_aligned_mem<float, 32>(sizeof(float)*n);
+    std::unique_ptr<float, decltype(free_deleter)> data(raw_ptr, free_deleter);
+    auto test = init<Eigen::ArrayXf, float>(data.get(), n);
+    Eigen::ArrayXf test2 = Eigen::ArrayXf::Random(no_panels/2);
     resize(test, data.get(), no_panels/2);
     test = copyinto_2(test2);
 
 
-    double* raw_ptr_2 = (double*) get_aligned_mem<double, 32>(sizeof(double)*n);
-    std::unique_ptr<double, decltype(free_deleter)> data_2(raw_ptr_2, free_deleter);
-    auto test3 = init<Eigen::ArrayXd, double>(data_2.get(), n/2);
+    float* raw_ptr_2 = (float*) get_aligned_mem<float, 32>(sizeof(float)*n);
+    std::unique_ptr<float, decltype(free_deleter)> data_2(raw_ptr_2, free_deleter);
+    auto test3 = init<Eigen::ArrayXf, float>(data_2.get(), n/2);
     test3 = copyinto_2(test);
     return test3.sum();
 }
-double bench_2(ul no_panels) {
+float bench_2(ul no_panels) {
     ul n = no_panels;
-    Eigen::ArrayXd test =  Eigen::ArrayXd::Random(no_panels);
-    Eigen::ArrayXd test2 = Eigen::ArrayXd::Random(no_panels/2);
-    Eigen::ArrayXd test3 =  Eigen::ArrayXd::Random(no_panels);
+    Eigen::ArrayXf test =  Eigen::ArrayXf::Random(no_panels);
+    Eigen::ArrayXf test2 = Eigen::ArrayXf::Random(no_panels/2);
+    Eigen::ArrayXf test3 =  Eigen::ArrayXf::Random(no_panels);
     test = copyinto_2(test2);
     test3 = copyinto_2(test);
     return test3.sum();
 }
-double bench_2_2(ul no_panels) {
+float bench_2_2(ul no_panels) {
     ul n = no_panels;
-    Eigen::ArrayXd test =  Eigen::ArrayXd::Random(no_panels);
-    Eigen::ArrayXd test2 = Eigen::ArrayXd::Random(no_panels/2);
-    Eigen::ArrayXd test3 =  Eigen::ArrayXd::Random(no_panels);
+    Eigen::ArrayXf test =  Eigen::ArrayXf::Random(no_panels);
+    Eigen::ArrayXf test2 = Eigen::ArrayXf::Random(no_panels/2);
+    Eigen::ArrayXf test3 =  Eigen::ArrayXf::Random(no_panels);
     test = copyinto_2(test2);
     test3 = copyinto_2(test);
     return test3.sum();
@@ -108,7 +108,7 @@ double bench_2_2(ul no_panels) {
 
 void bench_e1(benchmark::State &state) {
   ul no_panels = state.range(0) * state.range(0);
-  double CL;
+  float CL;
   for (auto _ : state) {
     CL = bench_1(no_panels);
   }
@@ -117,7 +117,7 @@ void bench_e1(benchmark::State &state) {
 }
 void bench_e1_2(benchmark::State &state) {
   ul no_panels = state.range(0) * state.range(0);
-  double CL;
+  float CL;
   for (auto _ : state) {
     CL = bench_1_2(no_panels);
   }
@@ -126,7 +126,7 @@ void bench_e1_2(benchmark::State &state) {
 }
 void bench_e2(benchmark::State &state) {
   ul no_panels = state.range(0) * state.range(0);
-  double CL;
+  float CL;
   for (auto _ : state) {
     CL = bench_2(no_panels);
   }
@@ -135,7 +135,7 @@ void bench_e2(benchmark::State &state) {
 }
 void bench_e2_2(benchmark::State &state) {
   ul no_panels = state.range(0) * state.range(0);
-  double CL;
+  float CL;
   for (auto _ : state) {
     CL = bench_2_2(no_panels);
   }

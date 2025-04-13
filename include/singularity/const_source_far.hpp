@@ -8,7 +8,7 @@
 
 struct SourceFar : IConstant3dSingularity<SourceFar> {
 
-  static Eigen::ArrayXd calcInfluenceImpl(const ComputeTask &compTask);
+  static Eigen::ArrayXf calcInfluenceImpl(const ComputeTask &compTask);
 
-  static double calcSelfInfluenceImpl(const ComputeTask &compTask);
+  static float calcSelfInfluenceImpl(const ComputeTask &compTask);
 };

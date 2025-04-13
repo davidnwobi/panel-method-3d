@@ -14,16 +14,16 @@ using Octree = pcl::octree::OctreePointCloudSearch<pcl::PointXYZ>;
 TEST(PM_OCTREE, PM_OCTREE) {
 
   std::size_t n = 100;
-  Eigen::ArrayX3d mat(n * n, 3); // make serialized regular grid;
+  Eigen::ArrayX3f mat(n * n, 3); // make serialized regular grid;
   for (std::size_t j = 0; j < n; j++) {
     for (std::size_t k = 0; k < n; k++) {
-      mat.row(k + j * n) << 0.0, (double)j, (double)k;
+      mat.row(k + j * n) << 0.0, (float)j, (float)k;
     }
   }
 
   // Typical point tree  workflow for panel methods
   auto const cloud = convertMat2Cloud(mat);
-  double resolution = 1;
+  float resolution = 1;
   Octree octree(resolution);
   octree.setInputCloud(cloud);
   octree.addPointsFromInputCloud();
@@ -31,11 +31,11 @@ TEST(PM_OCTREE, PM_OCTREE) {
   const auto searchPoints = createSearchPoints(mat);
   int scaleSize = 1;
   const auto allNeighbours = queryOctree(
-      octree, searchPoints, Eigen::ArrayXd::Ones(n * n) * scaleSize);
+      octree, searchPoints, Eigen::ArrayXf::Ones(n * n) * scaleSize);
 
   int testLoc = 5934; // arbitary point somewhere in the grid
   const auto &testNeigbours = allNeighbours[testLoc];
-  auto areaScalingRG = [](double scaleSize) -> std::size_t {
+  auto areaScalingRG = [](float scaleSize) -> std::size_t {
     return 4 * (std::floor(scaleSize) + 1) * (std::floor(scaleSize)) + 1;
   };
   EXPECT_TRUE((areaScalingRG(scaleSize) - testNeigbours.size()) ==

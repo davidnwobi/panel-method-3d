@@ -9,10 +9,10 @@
 
 namespace PanelGeometryUtils {
 
-Eigen::MatrixXd rowwiseCross(const Eigen::MatrixXd &A,
-                             const Eigen::MatrixXd &B) {
+Eigen::MatrixXf rowwiseCross(const Eigen::MatrixXf &A,
+                             const Eigen::MatrixXf &B) {
   assert(A.cols() == 3 && B.cols() == 3 && A.rows() == B.rows());
-  Eigen::MatrixXd C(A.rows(), 3);
+  Eigen::MatrixXf C(A.rows(), 3);
 
   // C.col(0) = A.col(1)*B.col(2) - A.col(2)*B.col(1)
   C.col(0) = A.col(1).cwiseProduct(B.col(2)) - A.col(2).cwiseProduct(B.col(1));
@@ -95,7 +95,7 @@ void PanelGeometry<T>::calculateCentrePointsandVectors() {
 
   normalVectors.setZero(numRows, VecType::ColsAtCompileTime);
 
-  auto calcLineCenterPoints = [&](int startIdx, int endIdx) -> Eigen::ArrayX3d {
+  auto calcLineCenterPoints = [&](int startIdx, int endIdx) -> Eigen::ArrayX3f {
     const auto &surface = mSurface;
     return ((surface.mPoints(surface.mFaceNodeIdx.col(endIdx),
                              Eigen::placeholders::all) +
@@ -104,10 +104,10 @@ void PanelGeometry<T>::calculateCentrePointsandVectors() {
             2);
   };
 
-  Eigen::ArrayX3d c01 = calcLineCenterPoints(0, 1);
-  Eigen::ArrayX3d c12 = calcLineCenterPoints(1, 2);
-  Eigen::ArrayX3d c23 = calcLineCenterPoints(2, 3);
-  Eigen::ArrayX3d c30 = calcLineCenterPoints(3, 0);
+  Eigen::ArrayX3f c01 = calcLineCenterPoints(0, 1);
+  Eigen::ArrayX3f c12 = calcLineCenterPoints(1, 2);
+  Eigen::ArrayX3f c23 = calcLineCenterPoints(2, 3);
+  Eigen::ArrayX3f c30 = calcLineCenterPoints(3, 0);
 
   // std::cout << c01 << "\n" << c12 << "\n" << c23 << "\n" << c30 << "\n\n";
   centrePoints = ((c01 + c23) / 2); // Pick any opposite sides
@@ -166,14 +166,14 @@ void PanelGeometry<T>::calculateCentrePointsandVectors() {
 }
 
 template <SurfaceType T>
-Eigen::Isometry3d
+Eigen::Isometry3f
 PanelGeometry<T>::createLocalConversionMatrix(std::size_t faceIdx) {
-  Eigen::Matrix3d rotationMatrix;
+  Eigen::Matrix3f rotationMatrix;
   rotationMatrix.col(0) = tangentXVectors.transpose().col(faceIdx);
   rotationMatrix.col(1) = tangentYVectors.transpose().col(faceIdx);
   rotationMatrix.col(2) = normalVectors.transpose().col(faceIdx);
 
-  Eigen::Isometry3d transformLocalToGlobal = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3f transformLocalToGlobal = Eigen::Isometry3f::Identity();
   transformLocalToGlobal.linear() = rotationMatrix;
   transformLocalToGlobal.translation() = centrePoints.row(faceIdx);
 
@@ -182,14 +182,14 @@ PanelGeometry<T>::createLocalConversionMatrix(std::size_t faceIdx) {
 }
 
 template <SurfaceType T>
-Eigen::ArrayX3d PanelGeometry<T>::convertToLocal(int faceIdx,
-                                                 const ArrayX3d &points) const {
+Eigen::ArrayX3f PanelGeometry<T>::convertToLocal(int faceIdx,
+                                                 const ArrayX3f &points) const {
 
   return (conversionMatrices[faceIdx] * (points.transpose().matrix()))
       .transpose();
   // const Eigen::Index m = points.rows();
   // const Eigen::Index n = points.cols();
-  // Eigen::ArrayX3d out(m, n);
+  // Eigen::ArrayX3f out(m, n);
   //
   // for (Eigen::Index i = 0; i < m; i++) {
   //   out.row(i).transpose() =
@@ -199,13 +199,13 @@ Eigen::ArrayX3d PanelGeometry<T>::convertToLocal(int faceIdx,
 }
 
 template <SurfaceType T>
-double PanelGeometry<T>::calcPolyArea(const Eigen::ArrayX3d &vertices) const {
-  Eigen::ArrayXd partAreaSum(vertices.rows());
+float PanelGeometry<T>::calcPolyArea(const Eigen::ArrayX3f &vertices) const {
+  Eigen::ArrayXf partAreaSum(vertices.rows());
 
   // Shoelace Formula
   apply_adjacent_circular(vertices.rowwise().begin(), vertices.rowwise().end(),
                           partAreaSum.begin(),
-                          [](const RowVector3d &v1, const RowVector3d &v2) {
+                          [](const RowVector3f &v1, const RowVector3f &v2) {
                             return v1(0) * v2(1) - v1(1) * v2(0);
                           });
   return std::abs(0.5 * partAreaSum.sum());

@@ -5,15 +5,15 @@
 #include <concepts.hpp>
 #include <utility>
 
-std::pair<Eigen::VectorXd, Eigen::VectorXd>
+std::pair<Eigen::VectorXf, Eigen::VectorXf>
 assembleRhsImpl(std::span<const ComputeTask> surfacePanelCompTasks,
                 const PanelGeometry<SurfacePanel> &surfacePanelGeo,
-                const EvalPoints<double> &evalPoints,
-                const Eigen::Ref<Eigen::Array3d> &freeStream);
+                const EvalPoints<float> &evalPoints,
+                const Eigen::Ref<Eigen::Array3f> &freeStream);
   
 
-std::pair<Eigen::VectorXd, Eigen::VectorXd>
+std::pair<Eigen::VectorXf, Eigen::VectorXf>
 assembleRhs(std::span<const ComputeTaskPair> compTaskPairs,
             std::span<const PanelGeometryPair> panelGeometries,
-            const EvalPoints<double> &evalPoints,
-            const Eigen::Ref<Eigen::Array3d> &freeStream);
+            const EvalPoints<float> &evalPoints,
+            const Eigen::Ref<Eigen::Array3f> &freeStream);

@@ -12,29 +12,29 @@ class IPanelMethod {
 protected:
   std::reference_wrapper<const PanelGeometry<SurfacePanel>> surfacePanelRef;
   std::reference_wrapper<const PanelGeometry<WakePanel>> wakePanelRef;
-  std::reference_wrapper<const EvalPoints<double>> evalPointsRef;
-  Eigen::RowVector3d freeStream;
-  Eigen::ArrayX3d velocities;
+  std::reference_wrapper<const EvalPoints<float>> evalPointsRef;
+  Eigen::RowVector3f freeStream;
+  Eigen::ArrayX3f velocities;
   std::unique_ptr<ISolver> solver;
 
-  virtual Eigen::MatrixXd assembleLhs() = 0;
-  virtual Eigen::VectorXd assembleRhs() = 0;
-  virtual Eigen::MatrixXd calculatePanelVelocities() = 0;
+  virtual Eigen::MatrixXf assembleLhs() = 0;
+  virtual Eigen::VectorXf assembleRhs() = 0;
+  virtual Eigen::MatrixXf calculatePanelVelocities() = 0;
 
 public:
-  Eigen::VectorXd solution;
+  Eigen::VectorXf solution;
   IPanelMethod(const PanelGeometry<SurfacePanel> &surfacePanelGeo,
                const PanelGeometry<WakePanel> &wakePanelGeo,
-               const EvalPoints<double> &evalPoints,
+               const EvalPoints<float> &evalPoints,
                std::unique_ptr<ISolver> &&solver)
       : surfacePanelRef(surfacePanelGeo), wakePanelRef(wakePanelGeo),
         evalPointsRef(evalPoints), solver(std::move(solver)) {}
 
-  Eigen::ArrayX3d getComputedVelocites() const { return velocities; }
-  Eigen::VectorXd &getSolution() { return solution; }
-  Eigen::RowVector3d getfreeStream() const { return freeStream; }
-  void setFlowParams(double AoAd) {
-    double angleOfAttack = AoAd * M_PI / 180;
+  Eigen::ArrayX3f getComputedVelocites() const { return velocities; }
+  Eigen::VectorXf &getSolution() { return solution; }
+  Eigen::RowVector3f getfreeStream() const { return freeStream; }
+  void setFlowParams(float AoAd) {
+    float angleOfAttack = AoAd * M_PI / 180;
     freeStream = {std::cos(angleOfAttack), 0, std::sin(angleOfAttack)};
   };
   virtual void run() = 0;

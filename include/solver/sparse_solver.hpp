@@ -9,16 +9,16 @@
 // #define ANALYSIS_DIR
 // "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
 struct SparseSolver : ISolver {
-  Eigen::VectorXd solve(const Eigen::MatrixXd &lhs,
-                        const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 10) override {
+  Eigen::VectorXf solve(const Eigen::MatrixXf &lhs,
+                        const Eigen::VectorXf &rhs, float tol=1e-6, std::size_t maxit = 10) override {
     // FileReaderFactory::make_file_reader("dat", " ",
     // true)->save_data(std::string(ANALYSIS_DIR) + "/infMat.dat", lhs);
-    double lim = 1e-10;
+    float lim = 1e-10;
 #if (BENCHMARKING == 0)
     std::cout << "Creating...\n";
 #endif
-    typedef Eigen::SparseMatrix<double> SpMat;
-    typedef Eigen::Triplet<double> T;
+    typedef Eigen::SparseMatrix<float> SpMat;
+    typedef Eigen::Triplet<float> T;
 
     std::vector<T> tripletList;
     tripletList.reserve(lhs.rows() * lhs.cols());

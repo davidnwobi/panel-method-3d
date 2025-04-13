@@ -12,14 +12,14 @@
 #include <algorithm>
 #include <stdexcept>
 
-Eigen::MatrixXd SourceDoubletSingle::assembleLhs() {
+Eigen::MatrixXf SourceDoubletSingle::assembleLhs() {
 
   std::size_t evalDims = evalPointsRef.get().mEvalPoints.rows();
   std::size_t wakeDims = wakePanelCompTasks.size();
-  Eigen::MatrixXd surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
+  Eigen::MatrixXf surfaceInfluenceMatrix = makeInfluenceMatrix<DoubletP, true>(
       evalDims, evalDims, surfacePanelCompTasks);
   // print(surfaceInfluenceMatrix.topLeftCorner(20, 20)) << "\n";
-  Eigen::MatrixXd wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
+  Eigen::MatrixXf wakeInfluenceMatrix = makeInfluenceMatrix<DoubletP, false>(
       evalDims, wakeDims, wakePanelCompTasks);
   // combine source and wake
   for (std::size_t iWakeP = 0;
@@ -41,16 +41,16 @@ Eigen::MatrixXd SourceDoubletSingle::assembleLhs() {
   return surfaceInfluenceMatrix;
 }
 
-Eigen::VectorXd SourceDoubletSingle::assembleRhs() {
+Eigen::VectorXf SourceDoubletSingle::assembleRhs() {
   std::size_t evalDims = evalPointsRef.get().mEvalPoints.rows();
-  Eigen::MatrixXd sourceInfluenceMat = makeInfluenceMatrix<SourceP, true>(
+  Eigen::MatrixXf sourceInfluenceMat = makeInfluenceMatrix<SourceP, true>(
       evalDims, evalDims, surfacePanelCompTasks);
   sourceStrength = rowwiseDotProduct(IPM::surfacePanelRef.get().normalVectors,
                                      IPM::freeStream);
   return -(sourceInfluenceMat * sourceStrength);
 }
 
-Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
+Eigen::MatrixXf SourceDoubletSingle::calculatePanelVelocities() {
   auto &panel = IPM::surfacePanelRef.get();
   std::size_t nYSecs = panel.mSurface.nYsecs;
   std::size_t nXsecs = panel.mSurface.nXsecs;
@@ -63,7 +63,7 @@ Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
   // order, yes compute task <- centerpoints <- face
 
   // 1): Convert the centrepoints to panel reference frame
-  Eigen::ArrayXXd xPoints(nXsecs, nYSecs);
+  Eigen::ArrayXXf xPoints(nXsecs, nYSecs);
   xPoints.setZero();
   for (int iY = 0; iY < nYSecs; iY++) {
     for (int iX = 1; iX < nXsecs; iX++) {
@@ -74,7 +74,7 @@ Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
                         xPoints(iX - 1, iY);
     }
   }
-  Eigen::ArrayXXd yPoints(nXsecs, nYSecs);
+  Eigen::ArrayXXf yPoints(nXsecs, nYSecs);
   yPoints.setZero();
   for (int iX = 0; iX < nXsecs; iX++) {
     for (int iY = 1; iY < nYSecs; iY++) {
@@ -85,17 +85,17 @@ Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
                         yPoints(iX, iY - 1);
     }
   }
-  Eigen::ArrayXXd zPoints = panel.centrePoints.col(2).reshaped(nXsecs, nYSecs);
+  Eigen::ArrayXXf zPoints = panel.centrePoints.col(2).reshaped(nXsecs, nYSecs);
 
   // 2:) u = -d(mu)/d(x_l); v = -d(mu)/d(y_l); w = sigma
-  Eigen::ArrayXXd fPoints(nXsecs, nYSecs);
+  Eigen::ArrayXXf fPoints(nXsecs, nYSecs);
   fPoints << IPM::solution.reshaped(nXsecs, nYSecs); // no minus
 
-  Eigen::ArrayX3d inducedVelocities(nXsecs * nYSecs, 3);
+  Eigen::ArrayX3f inducedVelocities(nXsecs * nYSecs, 3);
   inducedVelocities << -centralDifference<true>(xPoints, fPoints).reshaped(),
       -centralDifference<false>(yPoints, fPoints).reshaped(), -sourceStrength;
 
-  Eigen::ArrayX3d globalVelocites(nXsecs * nYSecs, 3);
+  Eigen::ArrayX3f globalVelocites(nXsecs * nYSecs, 3);
 
   globalVelocites << rowwiseDotProduct(panel.tangentXVectors, IPM::freeStream),
       rowwiseDotProduct(panel.tangentYVectors, IPM::freeStream),
@@ -131,15 +131,15 @@ Eigen::MatrixXd SourceDoubletSingle::calculatePanelVelocities() {
 SourceDoubletSingle::SourceDoubletSingle(
     const PanelGeometry<SurfacePanel> &surfacePanelGeo,
     const PanelGeometry<WakePanel> &wakePanelGeo,
-    const EvalPoints<double> &evalPoints, std::unique_ptr<ISolver> &&solver,
-    double AoAd)
+    const EvalPoints<float> &evalPoints, std::unique_ptr<ISolver> &&solver,
+    float AoAd)
     : IPanelMethod(surfacePanelGeo, wakePanelGeo, evalPoints,
                    std::move(solver)) {
   IPM::setFlowParams(AoAd);
 }
 template <typename PanelGeo>
 auto makeComputeTasks(const PanelGeo &panelGeo,
-                      const EvalPoints<double> &evalPoints) {
+                      const EvalPoints<float> &evalPoints) {
   int nPanels = panelGeo.centrePoints.rows();
   auto faceIdxs = RANGE(nPanels);
   return initialize_transform<std::vector<ComputeTask>>(
@@ -158,4 +158,4 @@ void SourceDoubletSingle::run() {
   IPM::velocities = calculatePanelVelocities();
 }
 
-Eigen::ArrayXd SourceDoubletSingle::getSource() const { return sourceStrength; }
+Eigen::ArrayXf SourceDoubletSingle::getSource() const { return sourceStrength; }

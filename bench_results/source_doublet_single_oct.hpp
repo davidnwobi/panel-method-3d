@@ -9,20 +9,20 @@ class SourceDoubletSingleOct : public IPanelMethod {
   using IPM = IPanelMethod;
 
 private:
-  Eigen::VectorXd sourceStrength;
+  Eigen::VectorXf sourceStrength;
   std::vector<ComputeTask> surfacePanelCompTasks;
   std::vector<ComputeTask> wakePanelCompTasks;
 
 protected:
-  Eigen::MatrixXd assembleLhs() override;
-  Eigen::VectorXd assembleRhs() override;
-  Eigen::MatrixXd calculatePanelVelocities() override;
+  Eigen::MatrixXf assembleLhs() override;
+  Eigen::VectorXf assembleRhs() override;
+  Eigen::MatrixXf calculatePanelVelocities() override;
 
 public:
   SourceDoubletSingleOct(const PanelGeometry<SurfacePanel> &surfacePanelGeo,
                          const PanelGeometry<WakePanel> &wakePanelGeo,
-                         const EvalPoints<double> &evalPoints,
-                         std::unique_ptr<ISolver> &&solver, double AoAd);
+                         const EvalPoints<float> &evalPoints,
+                         std::unique_ptr<ISolver> &&solver, float AoAd);
   void run() override;
-  Eigen::ArrayXd getSource() const;
+  Eigen::ArrayXf getSource() const;
 };

@@ -14,7 +14,7 @@ template <typename Derived1, typename Derived2>
 void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
                      Eigen::MatrixBase<Derived2> &rhs_mat,
                      const PanelGeometryPair &panelGeometries,
-                     const EvalPoints<double> &evalPoints, std::size_t offset) {
+                     const EvalPoints<float> &evalPoints, std::size_t offset) {
 #if (BENCHMARKING == 0)
   print(__PRETTY_FUNCTION__);
 #endif
@@ -28,7 +28,7 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
   ComputeTask compTask;
   ComputeTask compTaskSelf;
   compTaskSelf.indices = {0};
-  compTaskSelf.points = (Eigen::ArrayX3d(1, 3) << 0, 0, 0).finished();
+  compTaskSelf.points = (Eigen::ArrayX3f(1, 3) << 0, 0, 0).finished();
 
   // Only small improvement
   // 59 -> 55
@@ -57,7 +57,7 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
     return;
   }
 
-  Eigen::ArrayXd wakeInfluence;
+  Eigen::ArrayXf wakeInfluence;
   int lowerFaceIdx;
   int upperFaceIdx;
   for (auto iWakeP : RANGE(wakeDims)) {
@@ -75,31 +75,31 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
 }
 
 template <typename Derived>
-double sparsity(const Eigen::ArrayBase<Derived> &mat) {
-  return ((double)(mat.abs() < 1e-6).count()) /
-         ((double)(mat.rows() * mat.cols()));
+float sparsity(const Eigen::ArrayBase<Derived> &mat) {
+  return ((float)(mat.abs() < 1e-6).count()) /
+         ((float)(mat.rows() * mat.cols()));
 }
-std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
+std::tuple<Eigen::MatrixXf, Eigen::VectorXf, Eigen::VectorXf>
 assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
-            const EvalPoints<double> &evalPoints,
-            const Eigen::Ref<Eigen::Array3d> &freeStream) {
+            const EvalPoints<float> &evalPoints,
+            const Eigen::Ref<Eigen::Array3f> &freeStream) {
 
 #if (BENCHMARKING == 0)
   print(__PRETTY_FUNCTION__);
 #endif
   std::size_t mDims = evalPoints.mEvalPoints.rows();
-  Eigen::MatrixXd lhs(mDims, mDims);
-  Eigen::VectorXd rhs(mDims);
+  Eigen::MatrixXf lhs(mDims, mDims);
+  Eigen::VectorXf rhs(mDims);
   rhs.setZero();
-  Eigen::VectorXd sourceStrength(mDims);
+  Eigen::VectorXf sourceStrength(mDims);
   std::size_t iPoints = 0;
   for (auto i : RANGE(panelGeometries.size())) {
 
     const auto &surf = panelGeometries[i].first;
     const auto cols = surf.centrePoints.rows();
-    Eigen::Block<MatrixXd, -1, -1, true> lhsBlock(lhs.derived(), 0, iPoints,
+    Eigen::Block<MatrixXf, -1, -1, true> lhsBlock(lhs.derived(), 0, iPoints,
                                                   mDims, cols);
-    Eigen::MatrixXd sourceInfluenceMat(mDims, cols);
+    Eigen::MatrixXf sourceInfluenceMat(mDims, cols);
     assembleLhsImpl(lhsBlock, sourceInfluenceMat, panelGeometries[i],
                     evalPoints, iPoints);
     sourceStrength.middleRows(iPoints, cols) =

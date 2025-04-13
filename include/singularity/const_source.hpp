@@ -7,11 +7,11 @@
 
 struct SourceP : IConstant3dSingularity<SourceP> {
 
-  using RowArray3d = Eigen::Array<double, 1, 3, Eigen::RowMajor>;
+  using RowArray3f = Eigen::Array<float, 1, 3, Eigen::RowMajor>;
 
 
-  static Eigen::ArrayXd calcInfluenceImpl(const ComputeTask &compTask);
+  static Eigen::ArrayXf calcInfluenceImpl(const ComputeTask &compTask);
 
-  static Eigen::ArrayXd calcInfluenceFarImpl(const ComputeTask &compTask);
-  static double calcSelfInfluenceImpl(const ComputeTask &compTask);
+  static Eigen::ArrayXf calcInfluenceFarImpl(const ComputeTask &compTask);
+  static float calcSelfInfluenceImpl(const ComputeTask &compTask);
 };

@@ -8,12 +8,12 @@
 #include <valarray>
 
 struct DoubletP : IConstant3dSingularity<DoubletP> {
-  static Eigen::ArrayXd term(const Eigen::Ref<const Eigen::ArrayX3d> &points,
-                             const Eigen::Ref<const Eigen::Array3d> &node1,
-                             const Eigen::Ref<const Eigen::Array3d> &node2);
+  static Eigen::ArrayXf term(const Eigen::Ref<const Eigen::ArrayX3f> &points,
+                             const Eigen::Ref<const Eigen::Array3f> &node1,
+                             const Eigen::Ref<const Eigen::Array3f> &node2);
 
-  static Eigen::ArrayXd calcInfluenceImpl(const ComputeTask &compTask);
+  static Eigen::ArrayXf calcInfluenceImpl(const ComputeTask &compTask);
 
-  static Eigen::ArrayXd calcInfluenceFarImpl(const ComputeTask &compTask);
-  static double calcSelfInfluenceImpl(const ComputeTask &compTask);
+  static Eigen::ArrayXf calcInfluenceFarImpl(const ComputeTask &compTask);
+  static float calcSelfInfluenceImpl(const ComputeTask &compTask);
 };

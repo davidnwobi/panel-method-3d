@@ -4,7 +4,7 @@
 #include <concepts.hpp>
 #include <span>
 
-std::tuple<Eigen::MatrixXd, Eigen::VectorXd, Eigen::VectorXd>
+std::tuple<Eigen::MatrixXf, Eigen::VectorXf, Eigen::VectorXf>
 assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
-            const EvalPoints<double> &evalPoints,
-            const Eigen::Ref<Eigen::Array3d> &freeStream);
+            const EvalPoints<float> &evalPoints,
+            const Eigen::Ref<Eigen::Array3f> &freeStream);

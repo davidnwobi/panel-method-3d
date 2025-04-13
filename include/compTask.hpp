@@ -9,14 +9,14 @@
 struct ComputeTask {
   //
   struct Face {
-    Eigen::ArrayX3d points;
+    Eigen::ArrayX3f points;
     std::size_t faceIdx;
-    Eigen::Array3d centrePoint;
-    double area;
+    Eigen::Array3f centrePoint;
+    float area;
   };
   Face face;
   std::vector<std::size_t> indices;
-  Eigen::ArrayX3d points;
+  Eigen::ArrayX3f points;
 };
 
 using ComputeTaskPair =
@@ -24,7 +24,7 @@ using ComputeTaskPair =
 // Ctor
 template <SurfaceType Surface>
 ComputeTask createInfluenceComputeTask(const PanelGeometry<Surface> &panelGeo,
-                                       const EvalPoints<double> &evalPoints,
+                                       const EvalPoints<float> &evalPoints,
                                        std::size_t faceIdx) {
   ComputeTask compTask;
 
@@ -40,7 +40,7 @@ ComputeTask createInfluenceComputeTask(const PanelGeometry<Surface> &panelGeo,
 template <SurfaceType Surface>
 void createInfluenceComputeTask(ComputeTask &compTask,
                                 const PanelGeometry<Surface> &panelGeo,
-                                const EvalPoints<double> &evalPoints,
+                                const EvalPoints<float> &evalPoints,
                                 std::size_t faceIdx) {
 
   compTask.face.faceIdx = faceIdx;
@@ -51,8 +51,8 @@ void createInfluenceComputeTask(ComputeTask &compTask,
 }
 
 ComputeTaskPair makeComputeTasksPairImpl(const PanelGeometryPair &panelGeometry,
-                                         const EvalPoints<double> &evalPoints);
+                                         const EvalPoints<float> &evalPoints);
 
 std::vector<ComputeTaskPair>
 makeComputeTaskPairs(std::span<PanelGeometryPair> panelGeometries,
-                     const EvalPoints<double> &evalPoints);
+                     const EvalPoints<float> &evalPoints);

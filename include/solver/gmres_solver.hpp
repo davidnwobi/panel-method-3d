@@ -12,12 +12,12 @@
 // "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
 
 struct GMRESSolver : ISolver {
-  Eigen::VectorXd solve(const Eigen::MatrixXd &lhs,
-                        const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 1000) override {
-    double lim = 1e-8;
+  Eigen::VectorXf solve(const Eigen::MatrixXf &lhs,
+                        const Eigen::VectorXf &rhs, float tol=1e-6, std::size_t maxit = 1000) override {
+    float lim = 1e-8;
     std::cout << "Creating...\n";
-    typedef Eigen::SparseMatrix<double> SpMat;
-    typedef Eigen::Triplet<double> T;
+    typedef Eigen::SparseMatrix<float> SpMat;
+    typedef Eigen::Triplet<float> T;
 
     std::vector<T> tripletList;
     tripletList.reserve(lhs.rows() * lhs.cols());
@@ -34,7 +34,7 @@ struct GMRESSolver : ISolver {
     Eigen::GMRES<SpMat> solver(A);
     solver.setTolerance(tol);
     solver.setMaxIterations(maxit);
-    Eigen::VectorXd x = rhs;
+    Eigen::VectorXf x = rhs;
     std::cout << "Solving...\n";
     x = solver.solve(rhs);
     std::cout << "#iterations:     " << solver.iterations() << std::endl;
