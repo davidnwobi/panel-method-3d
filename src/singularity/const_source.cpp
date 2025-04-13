@@ -178,6 +178,7 @@ Eigen::ArrayXd SourceP::calcInfluenceImpl(const ComputeTask &compTask) {
   for (Eigen::Index i = 0; i < fPoints.rows(); i++) {
     if (norms[i] > 1e-10) {
       // No real improvement over uncoalsesd. Slower for smaller data
+      // 63 -> 59
       R12_Q12_J12(R12_, Q12_, J12_, compTask.points, fPoints.row(i),
                   fPoints.row((i + 1) % sides));
       infMat += -R12_ * Q12_;

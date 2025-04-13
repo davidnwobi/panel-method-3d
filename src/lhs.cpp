@@ -3,6 +3,7 @@
 #include "panel_geo/panel_geo.hpp"
 #include "singularity/const_doublet.hpp"
 #include "singularity/const_source.hpp"
+#include "singularity/const_source_doublet.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
 #include <compTask.hpp>
@@ -29,13 +30,29 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
   compTaskSelf.indices = {0};
   compTaskSelf.points = (Eigen::ArrayX3d(1, 3) << 0, 0, 0).finished();
 
+  // Only small improvement
+  // 59 -> 55
+  /*
+   * Coaleasing function incurs suprisinly small gain. one would expect an
+   * increase making only one j12 call instead of two significantly reduced
+   * overhead*/
   for (auto i : RANGE(surfDims)) {
     createInfluenceComputeTask(compTask, surf, evalPoints, i);
     compTaskSelf.face = compTask.face;
-    lhs(Eigen::placeholders::all, i) = DoubletP::calcInfluence(compTask);
-    rhs_mat(Eigen::placeholders::all, i) = SourceP::calcInfluence(compTask);
+    Eigen::Block lhs_block(lhs.derived(), 0, i, lhs.rows(), 1);
+    Eigen::Block rhs_block(rhs_mat.derived(), 0, i, rhs_mat.rows(), 1);
+    SourceDoubletP::calcInfluenceImpl(rhs_block, lhs_block, compTask);
     lhs(i + offset, i) = DoubletP::calcSelfInfluence(compTaskSelf);
   }
+
+  // for (auto i : RANGE(surfDims)) {
+  //   createInfluenceComputeTask(compTask, surf, evalPoints, i);
+  //   compTaskSelf.face = compTask.face;
+  //   lhs(Eigen::placeholders::all, i) = DoubletP::calcInfluence(compTask);
+  //   rhs_mat(Eigen::placeholders::all, i) = SourceP::calcInfluence(compTask);
+  //   lhs(i + offset, i) = DoubletP::calcSelfInfluence(compTaskSelf);
+  // }
+
   if (wakeDims == 0) {
     return;
   }

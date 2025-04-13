@@ -168,8 +168,6 @@ void SourceDoubletP::calcInfluenceImpl(Eigen::Ref<Eigen::ArrayXd> sourceMat,
   for (Eigen::Index i = 0; i < sides; i++) {
     norms[i] = (fPoints.row(i) - fPoints.row((i + 1) % sides)).matrix().norm();
   }
-  sourceMat.setZero();
-  doubletMat.setZero();
 
   ArrayXd R12_(compTask.points.rows());
   ArrayXd Q12_(compTask.points.rows());
