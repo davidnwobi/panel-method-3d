@@ -1,6 +1,7 @@
 #include "singularity/internal_functions.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
+#include <cmath>
 
 using namespace Eigen;
 using RowArray3f = Eigen::Array<float, 1, 3, Eigen::RowMajor>;
@@ -145,7 +146,8 @@ void R12_Q12_J12(Eigen::Ref<Eigen::ArrayXf> R12_,
   const float dx = node2(0) - node1(0);
   const float dy = node2(1) - node1(1);
   const float d = std::sqrt(dx * dx + dy * dy);
-
+  const float clampTo = 1e9f;
+  float max_result = 0;
   for (Eigen::Index i = 0; i < points.rows(); ++i) {
     const float px = points(i, 0);
     const float py = points(i, 1);
@@ -171,15 +173,63 @@ void R12_Q12_J12(Eigen::Ref<Eigen::ArrayXf> R12_,
 
     // termP(m, e, h, r) = atan( (m*e - h) / (pz*r) )
     // watch for pz=0.0?
-    auto termP = [&](float m, float e, float h, float rr) {
-      // if pz=0, you might want to handle that carefully
-      const float denom = pz * rr;
-      return std::atan((m * e - h) / denom);
-    };
+    // auto termP = [&](float m, float e, float h, float rr) {
+    //   // if pz=0, you might want to handle that carefully
+    //   const float denom = pz * rr;
+    //   return std::atan((m * e - h) / denom);
+    // };
+    // J12_[i] = termP(m12, e1, h1, r1) - termP(m12, e2, h2, r2);
+    // const float old = J12_[i];
+    const double a1 = (m12 * e1 - h1) / (pz * r1);
+    const double a2 = (m12 * e2 - h2) / (pz * r2);
 
-    // difference of termP for node1, node2
-    J12_[i] = termP(m12, e1, h1, r1) - termP(m12, e2, h2, r2);
+    if (!std::isfinite(a1) && !std::isfinite(a2)) {
+      J12_[i] = std::copysign(M_PI_2, a1) - std::copysign(M_PI_2, a2);
+    } else if (!std::isfinite(a1)) {
+      J12_[i] = std::copysign(M_PI_2, a1) - std::atan(a2);
+    } else if (!std::isfinite(a2)) {
+      J12_[i] = std::atan(a1) - std::copysign(M_PI_2, a2);
+    } else {
+      J12_[i] = std::atan2((a1 - a2), (1 + a1 * a2));
+    }
+    // if (std::abs(m12) < 1e-6) {
+    //   const float num = (h2 * r1 - h1 * r2) * pz;
+    //   const float denum = (h1 * h2 + r1 * r2 * pz * pz);
+    //   const float combined = num / denum;
+    //   float old = J12_[i];
+    //   J12_[i] = atan2(num, denum);
+    //
+    // } else if (!std::isfinite(m12)) {
+    //   float old = J12_[i];
+    //   J12_[i] = 0;
+    // } else {
+    //
+    //   // const float num =
+    //   //     (m12 * (e1 * r2 * pz - e2 * r1 * pz) + h2 * r1 * pz - h1 * r2 *
+    //   pz);
+    //   // const float denum = (m12 * (-e2 * h1 - e1 * h2 + e1 * e2 * m12) +
+    //   //                      h1 * h2 + r1 * r2 * pz * pz);
+    //   // const float result = num / denum;
+    //   const float a1 = (m12 * e1 - h1) / (pz * r1);
+    //   const float a2 = (m12 * e1 - h1) / (pz * r1);
+    //
+    //   if (a1
+    //   float old = J12_[i];
+    //   max_result = std::min(max_result, old);
+    //   J12_[i] = atan2f(num, denum);
+    //   if (!(std::abs(old - J12_[i]) < 1e-6)) {
+    //     print("Same 3: ", J12_[i] > 0 ? "True " : "False");
+    //     print((m12 * e1 - h1) / (pz * r1), " ", (m12 * e2 - h2) / (pz * r2));
+    //     print("old: ", old, " curr: ", J12_[i], " num ", num, "denum", denum,
+    //           " pz ", pz);
+    //   }
+    //   // print((m12 * e1 - h1) / (pz * r1) * (m12 * e2 - h2) / (pz * r2));
+    // }
   }
+
+  // print(J12_[i]);k
+  // // difference of termP for node1, node2
+  // J12_[i] = termP(m12, e1, h1, r1)  - termP(m12, e2, h2, r2);
 }
 // Eigen::ArrayXf J12_OLD(const Eigen::Ref<const Eigen::ArrayX3f> &points,
 //                        const Eigen::Ref<const Eigen::Array3f> &node1,
