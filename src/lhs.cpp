@@ -90,6 +90,7 @@ assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
   std::size_t mDims = evalPoints.mEvalPoints.rows();
   Eigen::MatrixXf lhs(mDims, mDims);
   Eigen::VectorXf rhs(mDims);
+  lhs.setZero();
   rhs.setZero();
   Eigen::VectorXf sourceStrength(mDims);
   std::size_t iPoints = 0;
@@ -100,6 +101,7 @@ assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
     Eigen::Block<MatrixXf, -1, -1, true> lhsBlock(lhs.derived(), 0, iPoints,
                                                   mDims, cols);
     Eigen::MatrixXf sourceInfluenceMat(mDims, cols);
+    sourceInfluenceMat.setZero();
     assembleLhsImpl(lhsBlock, sourceInfluenceMat, panelGeometries[i],
                     evalPoints, iPoints);
     sourceStrength.middleRows(iPoints, cols) =
