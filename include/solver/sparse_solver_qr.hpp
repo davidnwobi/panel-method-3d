@@ -2,13 +2,14 @@
 #include "solver/isolver.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
+#include <Eigen/OrderingMethods>
 #include <Eigen/Sparse>
-#include <Eigen/SparseLU>
+#include <Eigen/SparseQR>
 #include <iostream>
 #include <vector>
 // #define ANALYSIS_DIR
 // "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
-struct SparseSolver : ISolver {
+struct SparseSolverQR : ISolver {
   Eigen::VectorXd solve(const Eigen::MatrixXd &lhs, const Eigen::VectorXd &rhs,
                         double tol = 1e-6, std::size_t maxit = 10) override {
     // FileReaderFactory::make_file_reader("dat", " ",
@@ -21,7 +22,7 @@ struct SparseSolver : ISolver {
     typedef Eigen::SparseMatrix<double> SpMat;
     SpMat A = lhs.sparseView(lim);
 
-    Eigen::SparseLU<SpMat> solver;
+    Eigen::SparseQR<SpMat, Eigen::COLAMDOrdering<int>> solver;
 #if (BENCHMARKING == 0)
     std::cout << "Computing...\n";
 #endif

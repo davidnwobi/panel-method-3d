@@ -5,7 +5,10 @@
 #include "mat_reader/mat_reader.hpp"
 #include "post_processing.hpp"
 #include "rhs.hpp"
+#include "solver/bicgstab_solver.hpp"
+#include "solver/dense_solver.hpp"
 #include "solver/gmres_solver.hpp"
+#include "solver/sparse_solver_qr.hpp"
 #include "surface/surface_panel.hpp"
 #include "surface/surface_reader.hpp"
 #include "surface/wake_panel.hpp"
@@ -34,10 +37,13 @@ std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
   auto panelGeometries = calc_panel_geometry(pset);
   print("Wake Size: ", panelGeometries[0].second.centrePoints.rows());
   auto evalPoints = create_eval_points(panelGeometries);
-  auto [lhs, rhs, sourceStrength] =
+  Eigen::MatrixXd lhs;
+  Eigen::VectorXd rhs, sourceStrength;
+  std::tie(lhs, rhs, sourceStrength) =
       assembleLhs(panelGeometries, evalPoints, freeStream);
   Eigen::ArrayXd doubletStrength = GMRESSolver().solve(lhs, rhs);
-  savetxt("solution", doubletStrength);
+  return {};
+  // savetxt("solution.txt", doubletStrength);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
 

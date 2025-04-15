@@ -90,6 +90,8 @@ assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
     rhs += -sourceInfluenceMat * sourceStrength.middleRows(iPoints, cols);
     iPoints += cols;
   }
+  // savetxt("lhs.txt", lhs);
+  // savetxt("rhs.txt", rhs);
 #if (BENCHMARKING == 0)
   print("OUT OF: ", __PRETTY_FUNCTION__);
 #endif
