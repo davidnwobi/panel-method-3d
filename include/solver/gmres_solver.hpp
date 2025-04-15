@@ -14,7 +14,7 @@
 struct GMRESSolver : ISolver {
   Eigen::VectorXf solve(const Eigen::MatrixXf &lhs, const Eigen::VectorXf &rhs,
                         float tol = 1e-6, std::size_t maxit = 1000) override {
-    float lim = 5e-7;
+    float lim = 1e-6;
     std::cout << "Creating...\n";
     typedef Eigen::SparseMatrix<float> SpMat;
 
