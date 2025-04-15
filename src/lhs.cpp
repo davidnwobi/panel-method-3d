@@ -36,6 +36,7 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
    * Coaleasing function incurs suprisinly small gain. one would expect an
    * increase making only one j12 call instead of two significantly reduced
    * overhead*/
+
   for (auto i : RANGE(surfDims)) {
     createInfluenceComputeTask(compTask, surf, evalPoints, i);
     compTaskSelf.face = compTask.face;
@@ -94,6 +95,7 @@ assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
   rhs.setZero();
   Eigen::VectorXf sourceStrength(mDims);
   std::size_t iPoints = 0;
+  print("EIGEN_MAX_ALIGN_BYTES: ", EIGEN_MAX_ALIGN_BYTES);
   for (auto i : RANGE(panelGeometries.size())) {
 
     const auto &surf = panelGeometries[i].first;
@@ -109,6 +111,8 @@ assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
     rhs += -sourceInfluenceMat * sourceStrength.middleRows(iPoints, cols);
     iPoints += cols;
   }
+  savetxt("lhs.txt", lhs);
+  savetxt("rhs.txt", rhs);
 #if (BENCHMARKING == 0)
   print("OUT OF: ", __PRETTY_FUNCTION__);
 #endif

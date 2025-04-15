@@ -6,6 +6,7 @@
 #include "post_processing.hpp"
 #include "rhs.hpp"
 #include "solver/gmres_solver.hpp"
+#include "solver/sparse_solver.hpp"
 #include "surface/surface_panel.hpp"
 #include "surface/surface_reader.hpp"
 #include "surface/wake_panel.hpp"

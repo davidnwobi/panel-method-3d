@@ -1,149 +1,117 @@
+#include "utils/utils.hpp"
 #include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <Eigen/Sparse>
+#include <benchmark/benchmark.h>
+#include <cstdio>
 #include <cstdlib>
 #include <memory>
-#include <benchmark/benchmark.h>
+#include <singularity/internal_functions.hpp>
 
 static const float MULTIPLIER = 10;
 using ul = long long;
 
-template<typename PlainObjectType, typename T>
-Eigen::Map<PlainObjectType, Eigen::Aligned32> init (T* data, size_t size){
-    return Eigen::Map<PlainObjectType, Eigen::Aligned32>(data, size);
+template <typename Derived>
+void convert(Eigen::MatrixBase<Derived> &dest,
+             const Eigen::MatrixBase<Derived> &src,
+             const Eigen::Isometry3f &conv_mat) {
+  dest = (conv_mat * (src.matrix()));
 }
 
-template<typename MapType, typename T>
-void resize (MapType& mapped, T* data, size_t size){
-    new (&mapped) MapType(data, size);
-}
+void bench(benchmark::State &state) {
+  ul no_points = state.range(0);
+  Eigen::ArrayXf R12 = Eigen::ArrayXf::Zero(no_points, 1);
+  Eigen::ArrayXf Q12 = Eigen::ArrayXf::Zero(no_points, 1);
+  Eigen::ArrayXf J12 = Eigen::ArrayXf::Zero(no_points, 1);
+  const Eigen::ArrayX3f points = Eigen::ArrayX3f::Random(no_points, 3);
+  const Eigen::ArrayXf point1 = Eigen::ArrayXf::Random(3, 1);
+  const Eigen::ArrayXf point2 = Eigen::ArrayXf::Random(3, 1);
 
-template<typename T, size_t Alignment>
-void* get_aligned_mem(size_t nbytes){
-    void* raw_ptr = nullptr;
-    ul SUCCESS = posix_memalign(&raw_ptr, Alignment, nbytes);
-    if (SUCCESS != 0){
-        std::abort();
+  for (auto _ : state) {
+    for (ul i = 0; i < no_points / 10; i++) {
+      R12_Q12_J12(R12, Q12, J12, points, point1, point2);
     }
-    return raw_ptr;
-}
-
-auto free_deleter = [](float* p) {
-    std::free(p);
-};
-
-template<typename Derived>
-inline auto expr1(const Eigen::ArrayBase<Derived>& d){
-    return d*100/((float) MULTIPLIER);
-}
-template<typename Derived>
-inline auto expr2(const Eigen::ArrayBase<Derived>& d){
-    return d.sin()/((float) MULTIPLIER);
-}
-template<typename Derived>
-inline auto copyinto(const Eigen::ArrayBase<Derived>& d){
-    return d*10.0/50.0 * expr1(d) * expr2(d);
-}
-
-template<typename Derived>
-inline Eigen::ArrayXf expr1_2(const Eigen::ArrayBase<Derived>& d){
-    return d*100/((float) MULTIPLIER);
-}
-template<typename Derived>
-inline Eigen::ArrayXf expr2_2(const Eigen::ArrayBase<Derived>& d){
-    return d.sin()/((float) MULTIPLIER);
-}
-template<typename Derived>
-inline Eigen::ArrayXf copyinto_2(const Eigen::ArrayBase<Derived>& d){
-    return d*10.0/50.0 * expr1_2(d) * expr2_2(d);
-}
-
-float bench_1(ul no_panels) {
-    ul n = no_panels;
-    float* raw_ptr = (float*) get_aligned_mem<float, 32>(sizeof(float)*n);
-    std::unique_ptr<float, decltype(free_deleter)> data(raw_ptr, free_deleter);
-    auto test = init<Eigen::ArrayXf, float>(data.get(), n);
-    Eigen::ArrayXf test2 = Eigen::ArrayXf::Random(no_panels/2);
-    resize(test, data.get(), no_panels/2);
-    test = copyinto(test2);
-
-    float* raw_ptr_2 = (float*) get_aligned_mem<float, 32>(sizeof(float)*n);
-    std::unique_ptr<float, decltype(free_deleter)> data_2(raw_ptr_2, free_deleter);
-    auto test3 = init<Eigen::ArrayXf, float>(data_2.get(), n/2);
-    test3 = copyinto(test);
-    return test3.sum();
-}
-float bench_1_2(ul no_panels) {
-    ul n = no_panels;
-    float* raw_ptr = (float*) get_aligned_mem<float, 32>(sizeof(float)*n);
-    std::unique_ptr<float, decltype(free_deleter)> data(raw_ptr, free_deleter);
-    auto test = init<Eigen::ArrayXf, float>(data.get(), n);
-    Eigen::ArrayXf test2 = Eigen::ArrayXf::Random(no_panels/2);
-    resize(test, data.get(), no_panels/2);
-    test = copyinto_2(test2);
-
-
-    float* raw_ptr_2 = (float*) get_aligned_mem<float, 32>(sizeof(float)*n);
-    std::unique_ptr<float, decltype(free_deleter)> data_2(raw_ptr_2, free_deleter);
-    auto test3 = init<Eigen::ArrayXf, float>(data_2.get(), n/2);
-    test3 = copyinto_2(test);
-    return test3.sum();
-}
-float bench_2(ul no_panels) {
-    ul n = no_panels;
-    Eigen::ArrayXf test =  Eigen::ArrayXf::Random(no_panels);
-    Eigen::ArrayXf test2 = Eigen::ArrayXf::Random(no_panels/2);
-    Eigen::ArrayXf test3 =  Eigen::ArrayXf::Random(no_panels);
-    test = copyinto_2(test2);
-    test3 = copyinto_2(test);
-    return test3.sum();
-}
-float bench_2_2(ul no_panels) {
-    ul n = no_panels;
-    Eigen::ArrayXf test =  Eigen::ArrayXf::Random(no_panels);
-    Eigen::ArrayXf test2 = Eigen::ArrayXf::Random(no_panels/2);
-    Eigen::ArrayXf test3 =  Eigen::ArrayXf::Random(no_panels);
-    test = copyinto_2(test2);
-    test3 = copyinto_2(test);
-    return test3.sum();
-}
-
-void bench_e1(benchmark::State &state) {
-  ul no_panels = state.range(0) * state.range(0);
-  float CL;
-  for (auto _ : state) {
-    CL = bench_1(no_panels);
   }
-  benchmark::DoNotOptimize(CL);
-  state.SetBytesProcessed((ul)state.iterations()*(ul)no_panels*(ul)8);
+  state.SetBytesProcessed((ul)state.iterations() * (ul)no_points * (ul)8);
 }
-void bench_e1_2(benchmark::State &state) {
-  ul no_panels = state.range(0) * state.range(0);
-  float CL;
+void bench_cov(benchmark::State &state) {
+  ul no_points = state.range(0);
+  Eigen::Isometry3f conv_mat;
+  conv_mat.linear() = Eigen::Matrix3f::Random();
+  conv_mat.translation() = Eigen::Vector3f::Random();
+  const Eigen::Matrix3Xf points = Eigen::Array3Xf::Random(3, no_points);
+  Eigen::Matrix3Xf pointDest = Eigen::Array3Xf::Zero(3, no_points);
+
+  const ul iter = 100;
   for (auto _ : state) {
-    CL = bench_1_2(no_panels);
+    for (ul i = 0; i < iter; i++) {
+      convert(pointDest, points, conv_mat);
+    }
   }
-  benchmark::DoNotOptimize(CL);
-  state.SetBytesProcessed(ul(state.iterations())*(ul)no_panels*(ul)8);
-}
-void bench_e2(benchmark::State &state) {
-  ul no_panels = state.range(0) * state.range(0);
-  float CL;
-  for (auto _ : state) {
-    CL = bench_2(no_panels);
-  }
-  benchmark::DoNotOptimize(CL);
-  state.SetBytesProcessed(ul(state.iterations())*(ul)no_panels*(ul)8);
-}
-void bench_e2_2(benchmark::State &state) {
-  ul no_panels = state.range(0) * state.range(0);
-  float CL;
-  for (auto _ : state) {
-    CL = bench_2_2(no_panels);
-  }
-  benchmark::DoNotOptimize(CL);
-  state.SetBytesProcessed(ul(state.iterations())*(ul)no_panels*(ul)8);
+  state.SetBytesProcessed((ul)state.iterations() * (ul)no_points * (ul)8 *
+                          iter);
 }
 
-BENCHMARK(bench_e2_2)->RangeMultiplier(4)->Range(8, 8 << 12)->MinTime(10)->DisplayAggregatesOnly(true);
+void fill_1(const Eigen::MatrixXf &lhs) {
+  float lim = 5e-5;
+  typedef Eigen::SparseMatrix<float> SpMat;
+  typedef Eigen::Triplet<float> T;
+
+  std::vector<T> tripletList;
+  tripletList.reserve(lhs.rows() * lhs.cols());
+  for (int i = 0; i < lhs.rows(); i++) {
+    for (int j = 0; j < lhs.cols(); j++) {
+      if (!std::isinf(lhs(i, j)) && !std::isnan(lhs(i, j)) &&
+          std::abs(lhs(i, j)) > lim) {
+        tripletList.push_back(T(i, j, lhs(i, j)));
+      }
+    }
+  }
+  SpMat A(lhs.rows(), lhs.cols());
+  A.setFromTriplets(tripletList.begin(), tripletList.end());
+}
+
+void fill_2(const Eigen::MatrixXf &lhs) {
+  float lim = 5e-5;
+  typedef Eigen::SparseMatrix<float> SpMat;
+  typedef Eigen::Triplet<float> T;
+
+  std::vector<T> tripletList(lhs.rows() * lhs.cols());
+  for (int j = 0; j < lhs.cols(); j++) {
+    for (int i = 0; i < lhs.rows(); i++) {
+      if (std::abs(lhs(i, j)) > lim) {
+        tripletList[j * lhs.rows() + i] = T(i, j, lhs(i, j));
+      }
+    }
+  }
+  SpMat A(lhs.rows(), lhs.cols());
+  A.setFromTriplets(tripletList.begin(), tripletList.end());
+}
+
+void fill_3(const Eigen::MatrixXf &lhs) {
+  float lim = 5e-3;
+  typedef Eigen::SparseMatrix<float> SpMat;
+  typedef Eigen::Triplet<float> T;
+  SpMat A = lhs.sparseView(lim);
+}
+
+void bench_fill(benchmark::State &state) {
+  const int N_DIM = state.range(0);
+  const Eigen::MatrixXf points =
+      (Eigen::ArrayXXf::Ones(N_DIM, N_DIM) * 10) *
+          (Eigen::ArrayXXf::Random(N_DIM, N_DIM) * 3) +
+      3;
+
+  for (auto _ : state) {
+    fill_2(points);
+  }
+  state.SetBytesProcessed((ul)state.iterations() * (ul)(N_DIM * N_DIM) * (ul)8);
+}
+
+BENCHMARK(bench_fill)
+    ->RangeMultiplier(4)
+    ->Range(16 * 16, 64 * 64)
+    ->DisplayAggregatesOnly(true);
 
 BENCHMARK_MAIN();
 // int main(){
