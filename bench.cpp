@@ -231,8 +231,8 @@ void bench_kernel2(benchmark::State &state) {
   // R12_Q12_J12_AVX2(R12_, Q12_, J12_, x, y, z, node1, node2, N);
 
   for (auto _ : state) {
-    R12_Q12_J12_NORM(r12, q12, j12, x, y, z, node1, node2, N);
-    // R12_Q12_J12(R12_, Q12_, J12_, points, tPoints.col(0), tPoints.col(1));
+    // R12_Q12_J12_NORM(r12, q12, j12, x, y, z, node1, node2, N);
+    R12_Q12_J12(R12_, Q12_, J12_, points, tPoints.col(0), tPoints.col(1));
   }
   state.SetBytesProcessed((ul)state.iterations() * (ul)N * (ul)8);
 }

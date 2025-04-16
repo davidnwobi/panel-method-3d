@@ -299,3 +299,39 @@ void R12_Q12_J12_NORM(float *R12_, float *Q12_, float *J12_, float *x, float *y,
   // printf("m12 %f\n", m12);
   // printf("d %f\n", d);
 }
+
+void J12_NORM(float *__restrict J12_, float *__restrict x, float *__restrict y,
+              float *__restrict z, float *__restrict node1,
+              float *__restrict node2, size_t N) {
+  const float x1 = node1[0], y1 = node1[1];
+  const float x2 = node2[0], y2 = node2[1];
+  const float m12 = slope<float>(x1, y1, x2, y2);
+
+  for (Eigen::Index i = 0; i < N; ++i) {
+    const float px = x[i];
+    const float py = y[i];
+    const float pz = z[i];
+    // For node1:
+    const float dx1 = px - x1;
+    const float dy1 = py - y1;
+    const float e1 = dx1 * dx1 + pz * pz; // ek(node1)
+    const float h1 = dx1 * dy1;           // hk(node1)
+    const float r1 = std::sqrt(dx1 * dx1 + dy1 * dy1 + (pz * pz));
+
+    // For node2:
+    const float dx2 = px - x2;
+    const float dy2 = py - y2;
+    const float e2 = dx2 * dx2 + pz * pz; // ek(node2)
+    const float h2 = dx2 * dy2;           // hk(node2)
+    const float r2 = std::sqrt(dx2 * dx2 + dy2 * dy2 + (pz * pz));
+
+    auto termP = [&](float m, float e, float h, float rr) {
+      // if pz=0, you might want to handle that carefully
+      const float denom = pz * rr;
+      return fast_atan((m * e - h), denom);
+    };
+    J12_[i] = termP(m12, e1, h1, r1) - termP(m12, e2, h2, r2);
+  }
+  // printf("m12 %f\n", m12);
+  // printf("d %f\n", d);
+}

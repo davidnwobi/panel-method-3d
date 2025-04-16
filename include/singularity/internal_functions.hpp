@@ -125,3 +125,7 @@ void R12_Q12_J12_AVX2(float *R12_, float *Q12_, float *J12_, float *x, float *y,
                       float *z, float *node1, float *node2, size_t N);
 void R12_Q12_J12_NORM(float *R12_, float *Q12_, float *J12_, float *x, float *y,
                       float *z, float *node1, float *node2, size_t N);
+
+void J12_NORM(float *__restrict J12_, float *__restrict x, float *__restrict y,
+              float *__restrict z, float *__restrict node1,
+              float *__restrict node2, size_t N);
