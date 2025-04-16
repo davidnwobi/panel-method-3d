@@ -50,13 +50,24 @@ Eigen::ArrayXf DoubletP::calcInfluenceImpl(const ComputeTask &compTask) {
   for (Eigen::Index i = 0; i < sides; i++) {
     norms[i] = (fPoints.row(i) - fPoints.row((i + 1) % sides)).matrix().norm();
   }
+  size_t N = compTask.points.rows();
+  ArrayXf J12_(N);
+
+  float *j12 = const_cast<float *>(J12_.data());
+  float *x = const_cast<float *>(compTask.points.data());
+  float *y = const_cast<float *>(compTask.points.data() + N);
+  float *z = const_cast<float *>(compTask.points.data() + N * 2);
+  Array3Xf tPoints = fPoints.transpose();
   ArrayXf infMat(compTask.points.rows());
-  ArrayXf temp(compTask.points.rows());
   infMat.setZero();
+
   for (Eigen::Index i = 0; i < sides; i++) {
     if (norms[i] > 1e-10) {
-      infMat +=
-          J12(compTask.points, fPoints.row(i), fPoints.row((i + 1) % sides));
+      float *node1 = const_cast<float *>(tPoints.data() + i * 3);
+      float *node2 =
+          const_cast<float *>(tPoints.data() + ((i + 1) % sides) * 3);
+      J12_NORM(j12, x, y, z, node1, node2, N);
+      infMat += J12_;
     }
   }
   infMat *= -1 / (4 * std::numbers::pi_v<float>);
