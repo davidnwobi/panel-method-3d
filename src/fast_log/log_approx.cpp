@@ -1,4 +1,3 @@
-#include "fast_log/log_approx.h"
 #include <bit>
 #include <cinttypes>
 #include <cmath>
@@ -37,7 +36,7 @@ std::pair<double, int> __attribute__((always_inline)) my_frexp(double x) {
   return {frac, exponent + 1};
 }
 
-double __attribute__((noinline)) fastlog2(double x) {
+double __attribute__((always_inline)) fastlog2(double x) {
 
   /// Extract the fraction, and the power-of-two exponent.
 
