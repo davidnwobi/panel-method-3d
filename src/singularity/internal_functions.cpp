@@ -280,7 +280,8 @@ void R12_Q12_J12_NORM(float *R12_, float *Q12_, float *J12_, float *x, float *y,
     const float h2 = dx2 * dy2;           // hk(node2)
     const float r2 = std::sqrt(dx2 * dx2 + dy2 * dy2 + (pz * pz));
 
-    Q12_[i] = std::log((r1 + r2 + d) / (r1 + r2 - d));
+    const float q12e = (r1 + r2 + d) / (r1 + r2 - d);
+    Q12_[i] = fastlog2((double)q12e);
 
     auto termP = [&](float m, float e, float h, float rr) {
       // if pz=0, you might want to handle that carefully
