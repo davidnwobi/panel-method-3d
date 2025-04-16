@@ -189,6 +189,8 @@ void SourceDoubletP::calcInfluenceImpl(Eigen::Ref<Eigen::ArrayXf> sourceMat,
       float *node2 =
           const_cast<float *>(tPoints.data() + ((i + 1) % sides) * 3);
       R12_Q12_J12_AVX2(r12, q12, j12, x, y, z, node1, node2, N);
+      // R12_Q12_J12(R12_, Q12_, J12_, compTask.points, fPoints.row(i),
+      //             fPoints.row((i + 1) % sides));
       sourceMat += -R12_ * Q12_;
       doubletMat += J12_;
     }

@@ -243,7 +243,7 @@ void R12_Q12_J12_AVX2(float *R12_, float *Q12_, float *J12_, float *x, float *y,
     Q12_[i] = std::log((r1 + r2 + df) / (r1 + r2 - df));
 
     const float a1 = (m12f * e1 - h1) / (pz * r1);
-    const float a2 = (m12f * e1 - h1) / (pz * r1);
+    const float a2 = (m12f * e1 - h2) / (pz * r2);
     J12_[i] = std::atan(a1) - std::atan(a2);
   }
 }

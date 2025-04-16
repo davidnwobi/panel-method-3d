@@ -17,7 +17,7 @@ set(SLEEF_ENABLE_LTO on)
 add_compile_definitions(SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 add_compile_definitions(ANALYSIS_DIR="/home/okwuchukwu-nwobi/Projects/PanelMethods/python/out_cpp")
 #add_compile_options(-Werror -Wall -Wextra -pedantic-errors -Wno-conversion -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-sign-compare -g -O3)
-add_compile_options(-O3 -march=native)
+add_compile_options(-O3 -mavx512f -march=znver4 -mtune=znver4 -flto=8 -ffast-math -funsafe-math-optimizations -ffunction-sections)
 add_compile_options(-g)
 
 # EXTERNAL PACKAGES 
