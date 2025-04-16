@@ -1,4 +1,5 @@
 #include "singularity/internal_functions.hpp"
+#include "fast_atan/atan_approx.h"
 #include "fast_log/log_approx.h"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
@@ -286,7 +287,7 @@ void R12_Q12_J12_NORM(float *R12_, float *Q12_, float *J12_, float *x, float *y,
     auto termP = [&](float m, float e, float h, float rr) {
       // if pz=0, you might want to handle that carefully
       const float denom = pz * rr;
-      return std::atan((m * e - h) / denom);
+      return fast_atan((m * e - h), denom);
     };
     J12_[i] = termP(m12, e1, h1, r1) - termP(m12, e2, h2, r2);
   }

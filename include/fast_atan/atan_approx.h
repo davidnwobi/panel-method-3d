@@ -2,17 +2,18 @@
 #include <math.h>
 
 inline float atan_approximation(float x) {
-  float a1 = 0.99997726f;
-  float a3 = -0.33262347f;
-  float a5 = 0.19354346f;
-  float a7 = -0.11643287f;
-  float a9 = 0.05265332f;
-  float a11 = -0.01172120f;
+  float c1 = 0.99997726f;
+  float c3 = -0.33262347f;
+  float c5 = 0.19354346f;
+  float c7 = -0.11643287f;
+  float c9 = 0.05265332f;
+  float c11 = -0.01172120f;
 
   float x_sq = x * x;
-  return x *
-         (a1 +
-          x_sq * (a3 + x_sq * (a5 + x_sq * (a7 + x_sq * (a9 + x_sq * a11)))));
+  return x * fmaf(x_sq,
+                  fmaf(x_sq,
+                       fmaf(x_sq, fmaf(x_sq, fmaf(x_sq, c11, c9), c7), c5), c3),
+                  c1);
 }
 
 inline float fast_atan(float y, float x) {
