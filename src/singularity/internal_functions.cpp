@@ -1,4 +1,5 @@
 #include "singularity/internal_functions.hpp"
+#include "fast_log/log_approx.h"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
 #include <cmath>
