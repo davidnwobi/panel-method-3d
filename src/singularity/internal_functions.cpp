@@ -266,7 +266,12 @@ void R12_Q12_J12_NORM(float *R12_, float *Q12_, float *J12_, float *x, float *y,
     const float pz = z[i];
 
     R12_[i] = ((px - node1[0]) * dy - (py - node1[1]) * dx) / d;
+  }
 
+  for (Eigen::Index i = 0; i < N; ++i) {
+    const float px = x[i];
+    const float py = y[i];
+    const float pz = z[i];
     // For node1:
     const float dx1 = px - x1;
     const float dy1 = py - y1;
