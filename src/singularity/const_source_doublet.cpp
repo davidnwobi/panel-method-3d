@@ -169,14 +169,26 @@ void SourceDoubletP::calcInfluenceImpl(Eigen::Ref<Eigen::ArrayXf> sourceMat,
     norms[i] = (fPoints.row(i) - fPoints.row((i + 1) % sides)).matrix().norm();
   }
 
-  ArrayXf R12_(compTask.points.rows());
-  ArrayXf Q12_(compTask.points.rows());
-  ArrayXf J12_(compTask.points.rows());
+  size_t N = compTask.points.rows();
+  ArrayXf R12_(N);
+  ArrayXf Q12_(N);
+  ArrayXf J12_(N);
+
+  float *r12 = const_cast<float *>(R12_.data());
+  float *q12 = const_cast<float *>(Q12_.data());
+  float *j12 = const_cast<float *>(J12_.data());
+  float *x = const_cast<float *>(compTask.points.data());
+  float *y = const_cast<float *>(compTask.points.data() + N);
+  float *z = const_cast<float *>(compTask.points.data() + N * 2);
+  Array3Xf tPoints = fPoints.transpose();
+
   for (Eigen::Index i = 0; i < fPoints.rows(); i++) {
     if (norms[i] > 1e-10) {
       // No real improvement over uncoalsesd. Slower for smaller data
-      R12_Q12_J12(R12_, Q12_, J12_, compTask.points, fPoints.row(i),
-                  fPoints.row((i + 1) % sides));
+      float *node1 = const_cast<float *>(tPoints.data() + i * 3);
+      float *node2 =
+          const_cast<float *>(tPoints.data() + ((i + 1) % sides) * 3);
+      R12_Q12_J12_AVX2(r12, q12, j12, x, y, z, node1, node2, N);
       sourceMat += -R12_ * Q12_;
       doubletMat += J12_;
     }
