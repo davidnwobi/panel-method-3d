@@ -41,7 +41,8 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
     compTaskSelf.face = compTask.face;
     Eigen::Block lhs_block(lhs.derived(), 0, i, lhs.rows(), 1);
     Eigen::Block rhs_block(rhs_mat.derived(), 0, i, rhs_mat.rows(), 1);
-    SourceDoubletP::calcInfluenceImpl(rhs_block, lhs_block, compTask);
+    lhs_block = compTask.points.col(0);
+    rhs_block = compTask.points.col(1);
     lhs(i + offset, i) = DoubletP::calcSelfInfluence(compTaskSelf);
   }
 
@@ -64,9 +65,10 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
     createInfluenceComputeTask(compTask, wake, evalPoints, iWakeP);
     lowerFaceIdx = wake.mSurface.mTrailingEdgeIdx(iWakeP, 0);
     upperFaceIdx = wake.mSurface.mTrailingEdgeIdx(iWakeP, 1);
-    wakeInfluence = DoubletP::calcInfluence(compTask);
-    lhs(Eigen::placeholders::all, lowerFaceIdx).array() -= wakeInfluence;
-    lhs(Eigen::placeholders::all, upperFaceIdx).array() += wakeInfluence;
+    lhs(Eigen::placeholders::all, lowerFaceIdx).array() -=
+        compTask.points.col(0);
+    lhs(Eigen::placeholders::all, upperFaceIdx).array() +=
+        compTask.points.col(1);
   }
 
 #if (BENCHMARKING == 0)
