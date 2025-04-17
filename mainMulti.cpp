@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
   std::string outputFile;
   std::string paramsFile;
   bool batchAoa = false;
-
+  double dropTol = 1e-6;
   bool rotate_wake = false;
 
   for (int i = 1; i < argc; ++i) {
@@ -28,6 +28,8 @@ int main(int argc, char *argv[]) {
       batchAoa = true;
     } else if ((arg == "-r") && (i < argc)) {
       rotate_wake = true;
+    } else if ((arg == "-r") && (i < argc)) {
+      dropTol = 1e-6;
     }
   }
   if (inputFile.empty() || outputFile.empty() || paramsFile.empty()) {
