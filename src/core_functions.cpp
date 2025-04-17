@@ -42,7 +42,6 @@ std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
 
   Eigen::ArrayXf doubletStrength =
       GMRESSolver().setdropTol(dropTol).solve(lhs, rhs);
-  return {};
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
 

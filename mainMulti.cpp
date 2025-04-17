@@ -28,8 +28,8 @@ int main(int argc, char *argv[]) {
       batchAoa = true;
     } else if ((arg == "-r") && (i < argc)) {
       rotate_wake = true;
-    } else if ((arg == "-d") && (i < argc)) {
-      dropTol = 1e-6;
+    } else if ((arg == "-d") && (i + 1 < argc)) {
+      dropTol = std::stod(argv[++i]);
     }
   }
   if (inputFile.empty() || outputFile.empty() || paramsFile.empty()) {
@@ -55,7 +55,6 @@ int main(int argc, char *argv[]) {
     std::vector<std::vector<AeroResults>> results;
     results.reserve(resultsView.size());
     std::ranges::copy(resultsView, std::back_inserter(results));
-    return {};
     accumulateTotalPolars(outputFile, results);
   }
 
