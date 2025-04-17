@@ -8,6 +8,7 @@
 #include "solver/bicgstab_solver.hpp"
 #include "solver/dense_solver.hpp"
 #include "solver/gmres_solver.hpp"
+#include "solver/gmres_solver_ilu.hpp"
 #include "solver/sparse_solver_qr.hpp"
 #include "surface/surface_panel.hpp"
 #include "surface/surface_reader.hpp"
@@ -41,7 +42,7 @@ std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
   Eigen::VectorXd rhs, sourceStrength;
   std::tie(lhs, rhs, sourceStrength) =
       assembleLhs(panelGeometries, evalPoints, freeStream);
-  Eigen::ArrayXd doubletStrength = GMRESSolver().solve(lhs, rhs);
+  Eigen::ArrayXd doubletStrength = GMRESILUSolver().solve(lhs, rhs);
   return {};
   // savetxt("solution.txt", doubletStrength);
   auto results = postProcessBody(panelGeometries, doubletStrength,
