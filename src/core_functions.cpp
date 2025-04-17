@@ -37,6 +37,8 @@ std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
   auto evalPoints = create_eval_points(panelGeometries);
   auto [lhs, rhs, sourceStrength] =
       assembleLhs(panelGeometries, evalPoints, freeStream);
+
+  return {};
   Eigen::ArrayXf doubletStrength = GMRESSolver().solve(lhs, rhs);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
