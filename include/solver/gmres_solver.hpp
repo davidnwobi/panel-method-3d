@@ -7,10 +7,12 @@
 #include <cmath>
 #include <iostream>
 #include <unsupported/Eigen/IterativeSolvers>
+#include <unsupported/Eigen/SparseExtra>
 #include <vector>
 // #define ANALYSIS_DIR
 // "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
 
+#define SAVE_SYSTEM 1
 struct GMRESSolver : ISolver {
   Eigen::VectorXf solve(const Eigen::MatrixXf &lhs, const Eigen::VectorXf &rhs,
                         float tol = 1e-6, std::size_t maxit = 1000) override {
@@ -28,6 +30,11 @@ struct GMRESSolver : ISolver {
     std::cout << "#iterations:     " << solver.iterations() << std::endl;
     std::cout << "estimated error: " << solver.error() << std::endl;
 
+#if (SAVE_SYSTEM == 1)
+    Eigen::saveMarket(A, "lhs.txt");
+    Eigen::saveMarketDense(rhs, "rhs.txt");
+    Eigen::saveMarketDense(x, "solution.txt");
+#endif
     return x;
   }
 };

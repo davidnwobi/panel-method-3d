@@ -18,6 +18,8 @@
 #include <utility>
 #include <vector>
 
+#include <unsupported/Eigen/SparseExtra>
+
 std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
                                       const ReferenceGeom &refGeom,
                                       const std::string &inputFile,
@@ -38,8 +40,8 @@ std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
   auto [lhs, rhs, sourceStrength] =
       assembleLhs(panelGeometries, evalPoints, freeStream);
 
-  return {};
   Eigen::ArrayXf doubletStrength = GMRESSolver().solve(lhs, rhs);
+  return {};
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
 
