@@ -14,6 +14,14 @@
 
 #define SAVE_SYSTEM 1
 struct GMRESSolver : ISolver {
+private:
+  double dropTol;
+
+public:
+  auto setdropTol(double dropTol_) {
+    dropTol = dropTol_;
+    return *this;
+  }
   Eigen::VectorXf solve(const Eigen::MatrixXf &lhs, const Eigen::VectorXf &rhs,
                         float tol = 1e-6, std::size_t maxit = 1000) override {
     float lim = 1e-6;
