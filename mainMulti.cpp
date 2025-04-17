@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
       batchAoa = true;
     } else if ((arg == "-r") && (i < argc)) {
       rotate_wake = true;
-    } else if ((arg == "-r") && (i < argc)) {
+    } else if ((arg == "-d") && (i < argc)) {
       dropTol = 1e-6;
     }
   }
@@ -39,7 +39,8 @@ int main(int argc, char *argv[]) {
   }
   if (!batchAoa) {
     auto [flowParams, refGeom] = parse_param(paramsFile);
-    run_analysis(flowParams, refGeom, inputFile, outputFile, rotate_wake);
+    run_analysis(flowParams, refGeom, inputFile, outputFile, dropTol,
+                 rotate_wake);
   } else {
     auto [flowParams, refGeom] = parse_param_batch(paramsFile);
     std::ranges::copy(flowParams | views::transform([](const auto &flowParams) {
@@ -49,7 +50,7 @@ int main(int argc, char *argv[]) {
     auto resultsView =
         flowParams | views::transform([&](const auto &flowParams) {
           return run_analysis(flowParams, refGeom, inputFile, outputFile,
-                              rotate_wake);
+                              dropTol, rotate_wake);
         });
     std::vector<std::vector<AeroResults>> results;
     results.reserve(resultsView.size());

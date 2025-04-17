@@ -24,7 +24,7 @@ std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
                                       const ReferenceGeom &refGeom,
                                       const std::string &inputFile,
                                       const std::string &outputFile,
-                                      bool rotate_wake) {
+                                      double dropTol, bool rotate_wake) {
 
   Eigen::Array3f freeStream = getFreeStream(flowParams.aoa, 1);
   auto pset = readConvertedComponentsFromFile(inputFile);
