@@ -32,8 +32,10 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
   for (auto i : RANGE(surfDims)) {
     createInfluenceComputeTask(compTask, surf, evalPoints, i);
     compTaskSelf.face = compTask.face;
-    lhs(Eigen::placeholders::all, i) = DoubletP::calcInfluence(compTask);
-    rhs_mat(Eigen::placeholders::all, i) = SourceP::calcInfluence(compTask);
+    // lhs(Eigen::placeholders::all, i) = DoubletP::calcInfluence(compTask);
+    // rhs_mat(Eigen::placeholders::all, i) = SourceP::calcInfluence(compTask);
+    lhs(Eigen::placeholders::all, i) = compTask.points.col(0);
+    rhs_mat(Eigen::placeholders::all, i) = compTask.points.col(1);
     lhs(i + offset, i) = DoubletP::calcSelfInfluence(compTaskSelf);
   }
   if (wakeDims == 0) {
@@ -47,9 +49,10 @@ void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
     createInfluenceComputeTask(compTask, wake, evalPoints, iWakeP);
     lowerFaceIdx = wake.mSurface.mTrailingEdgeIdx(iWakeP, 0);
     upperFaceIdx = wake.mSurface.mTrailingEdgeIdx(iWakeP, 1);
-    wakeInfluence = DoubletP::calcInfluence(compTask);
-    lhs(Eigen::placeholders::all, lowerFaceIdx).array() -= wakeInfluence;
-    lhs(Eigen::placeholders::all, upperFaceIdx).array() += wakeInfluence;
+    lhs(Eigen::placeholders::all, lowerFaceIdx).array() -=
+        compTask.points.col(0);
+    lhs(Eigen::placeholders::all, upperFaceIdx).array() +=
+        compTask.points.col(1);
   }
 
 #if (BENCHMARKING == 0)
