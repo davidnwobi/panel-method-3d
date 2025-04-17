@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
     std::vector<std::vector<AeroResults>> results;
     results.reserve(resultsView.size());
     std::ranges::copy(resultsView, std::back_inserter(results));
+    return {};
     accumulateTotalPolars(outputFile, results);
   }
 
