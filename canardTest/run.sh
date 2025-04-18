@@ -5,7 +5,7 @@ cdir=../canardTest
 exec=mainM
 cp_file=0
 
-./$exec -i $cdir/canardTest.txt -p $cdir/params.dat -o $cdir/ -r -b
+./$exec -i $cdir/canardTest.txt -p $cdir/params.dat -o $cdir/ -r -b -d 5e-5
 
 if [ $cp_file -eq 1 ] ; then
   cp -r lhs.txt $cdir

@@ -32,6 +32,7 @@ int main(int argc, char *argv[]) {
       dropTol = std::stod(argv[++i]);
     }
   }
+  printf("%f", dropTol);
   if (inputFile.empty() || outputFile.empty() || paramsFile.empty()) {
     std::cerr << "Usage: " << argv[0]
               << " -i <input_file> -o <output_file> -p <params_file>\n";

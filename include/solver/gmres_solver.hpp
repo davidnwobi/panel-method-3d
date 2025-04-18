@@ -4,6 +4,7 @@
 #include <Eigen/Core>
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
+#include <Eigen/SparseCore>
 #include <cmath>
 #include <iostream>
 #include <unsupported/Eigen/IterativeSolvers>
@@ -15,20 +16,37 @@
 #define SAVE_SYSTEM 1
 struct GMRESSolver : ISolver {
 private:
-  double dropTol;
+  float dropTol = 1e-6;
 
 public:
-  auto setdropTol(double dropTol_) {
+  auto setdropTol(float dropTol_) {
     dropTol = dropTol_;
     return *this;
   }
   Eigen::VectorXf solve(const Eigen::MatrixXf &lhs, const Eigen::VectorXf &rhs,
                         float tol = 1e-6, std::size_t maxit = 1000) override {
-    float lim = 1e-6;
     std::cout << "Creating...\n";
     typedef Eigen::SparseMatrix<float> SpMat;
+    typedef Eigen::Triplet<float> T;
+    // SpMat A = lhs.sparseView(dropTol);
+    // Eigen::GMRES<SpMat> solver(A);
+    std::vector<T> tripletList;
+    tripletList.reserve(lhs.rows() * lhs.cols());
+    for (int i = 0; i < lhs.rows(); i++) {
+      for (int j = 0; j < lhs.cols(); j++) {
+        if (std::abs(lhs(i, j)) > dropTol) {
+          tripletList.push_back(T(i, j, lhs(i, j)));
+        }
+      }
+    }
 
-    SpMat A = lhs.sparseView(lim);
+    SpMat A(lhs.rows(), lhs.cols());
+    // A = lhs.sparseView(dropTol, dropTol);
+    A.setFromTriplets(tripletList.begin(), tripletList.end());
+    print("Sparsity: ",
+          ((double)A.nonZeros()) / ((double)(lhs.rows() * lhs.cols())));
+
+    printf("DropTol: %1.6f\n", dropTol);
     Eigen::GMRES<SpMat> solver(A);
     solver.setTolerance(tol);
     solver.setMaxIterations(maxit);

@@ -24,13 +24,13 @@ add_compile_options(-g)
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 #find_package(PCL 1.3 REQUIRED)
 
-ExternalProject_Add(libsleef
-  GIT_REPOSITORY https://github.com/shibatch/sleef
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/contrib
-)
-
-include_directories(${CMAKE_BINARY_DIR}/contrib/include)
-link_directories(${CMAKE_BINARY_DIR}/contrib/lib)
+# ExternalProject_Add(libsleef
+#   GIT_REPOSITORY https://github.com/shibatch/sleef
+#   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/contrib
+# )
+#
+# include_directories(${CMAKE_BINARY_DIR}/contrib/include)
+# link_directories(${CMAKE_BINARY_DIR}/contrib/lib)
 
 # NOTE: PanelMethods Library
 file(
@@ -61,20 +61,20 @@ set_target_properties(
 #add_definitions(${PCL_DEFINITIONS})
 
 target_include_directories(PanelMethods PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(PanelMethods PUBLIC Eigen3::Eigen sleef tlfloat )
+target_link_libraries(PanelMethods PUBLIC Eigen3::Eigen )
 
 
 add_library(mat_reader ${PROJECT_SOURCE_DIR}/src/mat_reader/mat_reader.cpp) 
 target_include_directories (mat_reader PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(mat_reader Eigen3::Eigen)
 
-add_executable(sleef_test sleef_test.cpp)
-add_dependencies(sleef_test libsleef)
-target_link_libraries(sleef_test sleef tlfloat PanelMethods)
+# add_executable(sleef_test sleef_test.cpp)
+# add_dependencies(sleef_test libsleef)
+# target_link_libraries(sleef_test sleef tlfloat PanelMethods)
 
 # NOTE: Main
 add_executable (main main.cpp)
-target_link_libraries(main PUBLIC PanelMethods mat_reader sleef tlfloat)
+target_link_libraries(main PUBLIC PanelMethods mat_reader)
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
@@ -92,8 +92,8 @@ endif()
 # NOTE: BENCHMARKING
 find_package(benchmark REQUIRED)
 add_executable(bench bench.cpp)
-add_dependencies(bench libsleef)
-target_link_libraries(bench PUBLIC benchmark::benchmark PanelMethods mat_reader sleef tlfloat)
+# add_dependencies(bench libsleef)
+target_link_libraries(bench PUBLIC benchmark::benchmark PanelMethods mat_reader)
 target_compile_definitions(bench PUBLIC BENCHMARK_STATIC_DEFINE)
 set(BENCHMARK_ENABLE_TESTING OFF)
 
