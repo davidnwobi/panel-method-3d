@@ -50,13 +50,13 @@ void AeroResults::post_process() {
 }
 
 void AeroResults::postProcessPanelResults() {
-  const Eigen::ArrayXXf &dV = pm->getComputedVelocites();
+  const Eigen::ArrayXXd &dV = pm->getComputedVelocites();
 
-  Eigen::ArrayXf dCp = 1 - (pm->getComputedVelocites().rowwise().squaredNorm());
+  Eigen::ArrayXd dCp = 1 - (pm->getComputedVelocites().rowwise().squaredNorm());
 
-  float q = 0.5 * lastParams.rho * lastParams.Vinf * lastParams.Vinf;
-  Eigen::ArrayXf dP = q * dCp;
-  Eigen::ArrayX3f dF =
+  double q = 0.5 * lastParams.rho * lastParams.Vinf * lastParams.Vinf;
+  Eigen::ArrayXd dP = q * dCp;
+  Eigen::ArrayX3d dF =
       surfacePanelGeo.normalVectors.colwise() * (dP * surfacePanelGeo.areas);
 
   panelResults["dCp"] = dCp;
@@ -69,14 +69,14 @@ void AeroResults::postProcessPanelResults() {
   panelResults["dFz"] = dF.col(2).eval();
 }
 void AeroResults::postProcessPolars() {
-  float q = 0.5 * lastParams.rho * lastParams.Vinf * lastParams.Vinf;
-  Eigen::Array3f F(3);
+  double q = 0.5 * lastParams.rho * lastParams.Vinf * lastParams.Vinf;
+  Eigen::Array3d F(3);
   F << panelResults["dFx"].sum(), panelResults["dFy"].sum(),
       panelResults["dFz"].sum();
-  Eigen::ArrayXf CF = F / (q * refGeom.refArea);
-  float CL = (-CF(0) * std::sin(lastParams.aoa * M_PI / 180) +
+  Eigen::ArrayXd CF = F / (q * refGeom.refArea);
+  double CL = (-CF(0) * std::sin(lastParams.aoa * M_PI / 180) +
                CF(2) * std::cos(lastParams.aoa * M_PI / 180));
-  float CD = (F(0) * std::cos(lastParams.aoa * M_PI / 180) +
+  double CD = (F(0) * std::cos(lastParams.aoa * M_PI / 180) +
                F(2) * std::sin(lastParams.aoa * M_PI / 180));
 
   polars["aoa"] = lastParams.aoa;
@@ -93,11 +93,11 @@ void AeroResults::postProcessPolars() {
 //
 //   auto nXsecs = surfacePanelGeo.mSurface.nXsecs;
 //   auto nYsecs = surfacePanelGeo.mSurface.nYsecs;
-//   Eigen::ArrayXf yAvg = surfacePanelGeo.centrePoints.col(1)
+//   Eigen::ArrayXd yAvg = surfacePanelGeo.centrePoints.col(1)
 //                             .reshaped(nXsecs, nYsecs)
 //                             .colwise()
 //                             .mean();
-//   Eigen::ArrayXf spanLift =
+//   Eigen::ArrayXd spanLift =
 //       (-panelResults["dFy"] * std::sin(lastParams.aoa * M_PI / 180) +
 //        panelResults["dFz"] * std::cos(lastParams.aoa * M_PI / 180))
 //           .reshaped(nXsecs, nYsecs)

@@ -10,7 +10,7 @@
 #define PACK_WIDTH 16
 
 #define CLAMP_TO 1e9
-void add_float_vec(float *c, float *a, float *b, size_t N) {
+void add_float_vec(double *c, double *a, double *b, size_t N) {
   __m512 va, vb, vc;
   for (int i = 0; i < N / PACK_WIDTH; i++) {
     va = _mm512_load_ps(a);
@@ -26,7 +26,7 @@ void add_float_vec(float *c, float *a, float *b, size_t N) {
     c[i] = a[i] + b[i];
   }
 }
-void sqrt_float_vec(float *c, float *a, size_t N) {
+void sqrt_float_vec(double *c, double *a, size_t N) {
   __m512 va, vc;
   for (int i = 0; i < N / PACK_WIDTH; i++) {
     va = _mm512_load_ps(a);
@@ -83,40 +83,40 @@ template <typename T> T slope(T xA, T yA, T xB, T yB) {
 #define _MUL(v1, v2) _mm512_mul_ps(v1, v2)
 #define _DIV(v1, v2) _mm512_div_ps(v1, v2)
 #define _CONST_VEC(v1) _mm512_set1_ps(v1)
-#define _COPY_SIGN(v1, v2) Sleef_copysignf16_avx512f(v1, v2)
+#define _COPY_SIGN(v1, v2) Sleef_copysignf16_avx512d(v1, v2)
 #define _ZERO() _mm512_setzero_ps()
 #define _GT(v1, v2) _mm512_cmp_ps_mask(v1, v2, _CMP_GT_OQ)
 #define _LT(v1, v2) _mm512_cmp_ps_mask(v1, v2, _CMP_LT_OQ)
 #define _FABS(v1) Sleef_fabsf16_avx512(v1)
 #define _SELECT_F(a, b, mask) _mm512_mask_blend_ps(mask, a, b)
-#define _HYPOPT(v1, v2) Sleef_hypotf16_u05avx512f(v1, v2)
+#define _HYPOPT(v1, v2) Sleef_hypotf16_u05avx512d(v1, v2)
 #define _SQR(v1) _MUL(v1, v1)
-#define _SQRT(v1) Sleef_sqrtf16_u05avx512f(v1)
-#define _LOG(v1) Sleef_logf16_u10avx512f(v1)
-#define _ATAN(v1) Sleef_atanf16_u10avx512f(v1)
+#define _SQRT(v1) Sleef_sqrtf16_u05avx512d(v1)
+#define _LOG(v1) Sleef_logf16_u10avx512d(v1)
+#define _ATAN(v1) Sleef_atanf16_u10avx512d(v1)
 #define PACK 16
 
-void R12_Q12_J12_AVX2(float *R12_, float *Q12_, float *J12_, float *x, float *y,
-                      float *z, float *node1, float *node2, size_t N) {
+void R12_Q12_J12_AVX2(double *R12_, double *Q12_, double *J12_, double *x, double *y,
+                      double *z, double *node1, double *node2, size_t N) {
   // Preliminary Constants
-  const float x1f = node1[0], y1f = node1[1];
-  const float x2f = node2[0], y2f = node2[1];
-  const float m12f = slope<float>(x1f, y1f, x2f, y2f);
+  const double x1f = node1[0], y1f = node1[1];
+  const double x2d = node2[0], y2d = node2[1];
+  const double m12d = slope<double>(x1f, y1f, x2d, y2d);
 
-  const float dxf = node2[0] - node1[0];
-  const float dyf = node2[1] - node1[1];
-  const float df = std::sqrt(dxf * dxf + dyf * dyf);
+  const double dxf = node2[0] - node1[0];
+  const double dyf = node2[1] - node1[1];
+  const double df = std::sqrt(dxf * dxf + dyf * dyf);
 
   __VECTOR_S x1 = _CONST_VEC(x1f);
   __VECTOR_S y1 = _CONST_VEC(y1f);
 
-  __VECTOR_S x2 = _CONST_VEC(x2f);
-  __VECTOR_S y2 = _CONST_VEC(y2f);
+  __VECTOR_S x2 = _CONST_VEC(x2d);
+  __VECTOR_S y2 = _CONST_VEC(y2d);
 
   // Slope function
   __VECTOR_S dx = _CONST_VEC(dxf);
   __VECTOR_S dy = _CONST_VEC(dyf);
-  __VECTOR_S m12 = _CONST_VEC(m12f);
+  __VECTOR_S m12 = _CONST_VEC(m12d);
   __VECTOR_S d = _CONST_VEC(df);
 
   for (size_t i = 0; i < N / PACK; ++i) {
@@ -159,70 +159,70 @@ void R12_Q12_J12_AVX2(float *R12_, float *Q12_, float *J12_, float *x, float *y,
   }
 
   for (size_t i = 0; i < N % PACK; ++i) {
-    const float px = x[i];
-    const float py = y[i];
-    const float pz = z[i];
+    const double px = x[i];
+    const double py = y[i];
+    const double pz = z[i];
 
     R12_[i] = ((px - node1[0]) * dyf - (py - node1[1]) * dxf) / df;
 
     // For node1:
-    const float dx1 = px - x1f;
-    const float dy1 = py - y1f;
-    const float e1 = dx1 * dx1 + pz * pz; // ek(node1)
-    const float h1 = dx1 * dy1;           // hk(node1)
-    const float r1 = std::sqrt(dx1 * dx1 + dy1 * dy1 + (pz * pz));
+    const double dx1 = px - x1f;
+    const double dy1 = py - y1f;
+    const double e1 = dx1 * dx1 + pz * pz; // ek(node1)
+    const double h1 = dx1 * dy1;           // hk(node1)
+    const double r1 = std::sqrt(dx1 * dx1 + dy1 * dy1 + (pz * pz));
 
     // For node2:
-    const float dx2 = px - x2f;
-    const float dy2 = py - y2f;
-    const float e2 = dx2 * dx2 + pz * pz; // ek(node2)
-    const float h2 = dx2 * dy2;           // hk(node2)
-    const float r2 = std::sqrt(dx2 * dx2 + dy2 * dy2 + (pz * pz));
+    const double dx2 = px - x2d;
+    const double dy2 = py - y2d;
+    const double e2 = dx2 * dx2 + pz * pz; // ek(node2)
+    const double h2 = dx2 * dy2;           // hk(node2)
+    const double r2 = std::sqrt(dx2 * dx2 + dy2 * dy2 + (pz * pz));
 
     Q12_[i] = std::log((r1 + r2 + df) / (r1 + r2 - df));
 
-    const float a1 = (m12f * e1 - h1) / (pz * r1);
-    const float a2 = (m12f * e1 - h2) / (pz * r2);
+    const double a1 = (m12d * e1 - h1) / (pz * r1);
+    const double a2 = (m12d * e1 - h2) / (pz * r2);
     J12_[i] = std::atan(a1) - std::atan(a2);
   }
 }
 
-void R12_Q12_J12_NORM(float *R12_, float *Q12_, float *J12_, float *x, float *y,
-                      float *z, float *node1, float *node2, size_t N) {
-  const float x1 = node1[0], y1 = node1[1];
-  const float x2 = node2[0], y2 = node2[1];
-  const float m12 = slope<float>(x1, y1, x2, y2);
+void R12_Q12_J12_NORM(double *R12_, double *Q12_, double *J12_, double *x, double *y,
+                      double *z, double *node1, double *node2, size_t N) {
+  const double x1 = node1[0], y1 = node1[1];
+  const double x2 = node2[0], y2 = node2[1];
+  const double m12 = slope<double>(x1, y1, x2, y2);
 
-  const float dx = node2[0] - node1[0];
-  const float dy = node2[1] - node1[1];
-  const float d = std::sqrt(dx * dx + dy * dy);
+  const double dx = node2[0] - node1[0];
+  const double dy = node2[1] - node1[1];
+  const double d = std::sqrt(dx * dx + dy * dy);
 
   for (Eigen::Index i = 0; i < N; ++i) {
-    const float px = x[i];
-    const float py = y[i];
-    const float pz = z[i];
+    const double px = x[i];
+    const double py = y[i];
+    const double pz = z[i];
 
     R12_[i] = ((px - node1[0]) * dy - (py - node1[1]) * dx) / d;
 
     // For node1:
-    const float dx1 = px - x1;
-    const float dy1 = py - y1;
-    const float e1 = dx1 * dx1 + pz * pz; // ek(node1)
-    const float h1 = dx1 * dy1;           // hk(node1)
-    const float r1 = std::sqrt(dx1 * dx1 + dy1 * dy1 + (pz * pz));
+    const double dx1 = px - x1;
+    const double dy1 = py - y1;
+    const double e1 = dx1 * dx1 + pz * pz; // ek(node1)
+    const double h1 = dx1 * dy1;           // hk(node1)
+    const double r1 = std::sqrt(dx1 * dx1 + dy1 * dy1 + (pz * pz));
 
     // For node2:
-    const float dx2 = px - x2;
-    const float dy2 = py - y2;
-    const float e2 = dx2 * dx2 + pz * pz; // ek(node2)
-    const float h2 = dx2 * dy2;           // hk(node2)
-    const float r2 = std::sqrt(dx2 * dx2 + dy2 * dy2 + (pz * pz));
+    const double dx2 = px - x2;
+    const double dy2 = py - y2;
+    const double e2 = dx2 * dx2 + pz * pz; // ek(node2)
+    const double h2 = dx2 * dy2;           // hk(node2)
+    const double r2 = std::sqrt(dx2 * dx2 + dy2 * dy2 + (pz * pz));
 
     Q12_[i] = std::log((r1 + r2 + d) / (r1 + r2 - d));
 
-    auto termP = [&](float m, float e, float h, float rr) {
+    auto termP = [&](double m, double e, double h, double rr) {
       // if pz=0, you might want to handle that carefully
-      const float denom = pz * rr;
+      const double denom = pz * rr;
       return std::atan((m * e - h) / denom);
     };
     J12_[i] = termP(m12, e1, h1, r1) - termP(m12, e2, h2, r2);
@@ -231,7 +231,7 @@ void R12_Q12_J12_NORM(float *R12_, float *Q12_, float *J12_, float *x, float *y,
   // printf("d %f\n", d);
 }
 
-bool validate(float *a, float *b, size_t N) {
+bool validate(double *a, double *b, size_t N) {
   for (int i = 0; i < N; i++) {
     if (std::abs((((double)a[i] - (double)b[i])) / ((double)a[i])) > 1e-4) {
       printf("Mismatch at %d, a = %1.6f, b = %1.6f, diff = %1.6f\n", i, a[i],
@@ -243,20 +243,20 @@ bool validate(float *a, float *b, size_t N) {
 }
 int main(int argc, char **argv) {
   const size_t N = 9937;
-  float *R12, *Q12, *J12, *R12_, *Q12_, *J12_, *x, *y, *z, *node1, *node2;
-  const size_t N_BYTES = N * sizeof(float);
+  double *R12, *Q12, *J12, *R12_, *Q12_, *J12_, *x, *y, *z, *node1, *node2;
+  const size_t N_BYTES = N * sizeof(double);
   const size_t ALIGNMENT = 64;
-  R12 = (float *)aligned_alloc(ALIGNMENT, N_BYTES);
-  Q12 = (float *)aligned_alloc(ALIGNMENT, N_BYTES);
-  J12 = (float *)aligned_alloc(ALIGNMENT, N_BYTES);
-  R12_ = (float *)aligned_alloc(ALIGNMENT, N_BYTES);
-  Q12_ = (float *)aligned_alloc(ALIGNMENT, N_BYTES);
-  J12_ = (float *)aligned_alloc(ALIGNMENT, N_BYTES);
-  x = (float *)aligned_alloc(ALIGNMENT, N_BYTES);
-  y = (float *)aligned_alloc(ALIGNMENT, N_BYTES);
-  z = (float *)aligned_alloc(ALIGNMENT, N_BYTES);
-  node1 = (float *)aligned_alloc(ALIGNMENT, ALIGNMENT);
-  node2 = (float *)aligned_alloc(ALIGNMENT, ALIGNMENT);
+  R12 = (double *)aligned_alloc(ALIGNMENT, N_BYTES);
+  Q12 = (double *)aligned_alloc(ALIGNMENT, N_BYTES);
+  J12 = (double *)aligned_alloc(ALIGNMENT, N_BYTES);
+  R12_ = (double *)aligned_alloc(ALIGNMENT, N_BYTES);
+  Q12_ = (double *)aligned_alloc(ALIGNMENT, N_BYTES);
+  J12_ = (double *)aligned_alloc(ALIGNMENT, N_BYTES);
+  x = (double *)aligned_alloc(ALIGNMENT, N_BYTES);
+  y = (double *)aligned_alloc(ALIGNMENT, N_BYTES);
+  z = (double *)aligned_alloc(ALIGNMENT, N_BYTES);
+  node1 = (double *)aligned_alloc(ALIGNMENT, ALIGNMENT);
+  node2 = (double *)aligned_alloc(ALIGNMENT, ALIGNMENT);
 
   srand(time(NULL));
   for (int i = 0; i < N; i++) {

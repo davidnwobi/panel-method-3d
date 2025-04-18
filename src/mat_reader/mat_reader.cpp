@@ -39,7 +39,7 @@ std::vector<std::string> splitMatLine(const std::string &line,
   return result;
 }
 
-using T = float;
+using T = double;
 struct TableData {
 
   using SerialData = std::vector<T>;
@@ -78,14 +78,14 @@ TableData read_table_data(const std::filesystem::path &file_loc,
   return TableData{n_rows, n_cols, data};
 }
 
-Eigen::MatrixXf table_to_mat(TableData &&table_data) {
+Eigen::MatrixXd table_to_mat(TableData &&table_data) {
   return Eigen::Map<
-      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
       std::move(table_data.serial_data.data()), table_data.rows,
       table_data.cols);
 }
 
-Eigen::MatrixXf loadtxt(const std::filesystem::path &file_loc,
+Eigen::MatrixXd loadtxt(const std::filesystem::path &file_loc,
                         const std::string &delim, int skip_rows) {
   return table_to_mat(read_table_data(file_loc, delim, skip_rows));
 }

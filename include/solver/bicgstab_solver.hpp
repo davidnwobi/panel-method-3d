@@ -10,13 +10,13 @@
 // "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
 
 struct BICGSTABSolver : ISolver {
-  Eigen::VectorXf solve(const Eigen::MatrixXf &lhs,
-                        const Eigen::VectorXf &rhs, float tol=1e-6, std::size_t maxit = 10) override {
-    float lim = 1e-6;
+  Eigen::VectorXd solve(const Eigen::MatrixXd &lhs,
+                        const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 10) override {
+    double lim = 1e-6;
     std::cout << "Creating...\n";
 
-    typedef Eigen::SparseMatrix<float> SpMat;
-    typedef Eigen::Triplet<float> T;
+    typedef Eigen::SparseMatrix<double> SpMat;
+    typedef Eigen::Triplet<double> T;
 
     std::vector<T> tripletList;
     tripletList.reserve(lhs.rows() * lhs.cols());
@@ -31,7 +31,7 @@ struct BICGSTABSolver : ISolver {
     SpMat A(lhs.rows(), lhs.cols());
     A.setFromTriplets(tripletList.begin(), tripletList.end());
     Eigen::BiCGSTAB<SpMat> solver(A);
-    Eigen::VectorXf x = rhs;
+    Eigen::VectorXd x = rhs;
     std::cout << "Solving...\n";
     x = solver.solve(rhs);
     std::cout << "#iterations:     " << solver.iterations() << std::endl;

@@ -10,7 +10,7 @@
 
 
 ComputeTaskPair makeComputeTasksPairImpl(const PanelGeometryPair &panelGeometry,
-                                         const EvalPoints<float> &evalPoints) {
+                                         const EvalPoints<double> &evalPoints) {
   int surfPanels = panelGeometry.first.centrePoints.rows();
   int wakePanels = panelGeometry.second.centrePoints.rows();
   auto surfaceComputeTaskView =
@@ -48,7 +48,7 @@ auto makeChunkData(const auto &panelGeometry) {
 }
 std::vector<ComputeTaskPair>
 makeComputeTaskPairs(std::span<PanelGeometryPair> panelGeometries,
-                     const EvalPoints<float> &evalPoints) {
+                     const EvalPoints<double> &evalPoints) {
 
   int nBodies = panelGeometries.size();
 

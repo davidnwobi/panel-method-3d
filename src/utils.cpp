@@ -60,11 +60,11 @@ CSVFileReader::CSVFileReader(std::string delimiter, bool has_header)
  * Implements reading data from the specified CSV file.
  *
  * @param fileToOpen The name of the CSV file to open and read data from.
- * @return Eigen::MatrixXf The data read from the CSV file.
+ * @return Eigen::MatrixXd The data read from the CSV file.
  */
-Eigen::MatrixXf CSVFileReader::read_data(std::string fileToOpen) {
+Eigen::MatrixXd CSVFileReader::read_data(std::string fileToOpen) {
   // Vector to store matrix entries row-wise
-  std::vector<float> matrixEntries;
+  std::vector<double> matrixEntries;
   // Input file stream to read the CSV file
   std::ifstream matrixDataFile(fileToOpen);
   if (!matrixDataFile.is_open()) {
@@ -89,7 +89,7 @@ Eigen::MatrixXf CSVFileReader::read_data(std::string fileToOpen) {
   }
   // Map the vector to Eigen matrix format
   return Eigen::Map<
-      Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
       matrixEntries.data(), matrixRowNumber,
       matrixEntries.size() / matrixRowNumber);
 }
@@ -102,12 +102,12 @@ Eigen::MatrixXf CSVFileReader::read_data(std::string fileToOpen) {
  * @param fileName The name of the CSV file to save data to.
  * @param matrix The matrix data to save.
  */
-void CSVFileReader::save_data(std::string fileName, Eigen::MatrixXf matrix) {
+void CSVFileReader::save_data(std::string fileName, Eigen::MatrixXd matrix) {
   const std::string delim{delimiter};
-  // float tol = 1e-9;
+  // double tol = 1e-9;
   // matrix =
   //     (matrix.array() < tol)
-  //         .select(Eigen::MatrixXf::Zero(matrix.rows(), matrix.cols()),
+  //         .select(Eigen::MatrixXd::Zero(matrix.rows(), matrix.cols()),
   //         matrix);
   const static Eigen::IOFormat CSVFormat(Eigen::FullPrecision,
                                          Eigen::DontAlignCols, delim, "\n");
@@ -130,14 +130,14 @@ std::string demangle(const char *mangledName) {
   return result;
 }
 
-Eigen::ArrayXf
-rowwiseDotProduct(const Eigen::Ref<const Eigen::ArrayXXf> &a1,
-                  const Eigen::Ref<const Eigen::RowVectorXf> &a2) {
+Eigen::ArrayXd
+rowwiseDotProduct(const Eigen::Ref<const Eigen::ArrayXXd> &a1,
+                  const Eigen::Ref<const Eigen::RowVectorXd> &a2) {
 
   const Eigen::Index m = a1.rows();
   const Eigen::Index n = a1.cols();
 
-  Eigen::ArrayXf out(m);
+  Eigen::ArrayXd out(m);
   out.setZero();
   for (Eigen::Index j = 0; j < n; j++) {
     for (Eigen::Index i = 0; i < m; i++) {

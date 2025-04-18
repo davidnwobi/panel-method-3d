@@ -8,28 +8,28 @@
 #include <vector>
 namespace views = std::views;
 template <typename Singularity, bool SelfInfluence> // concept constrain
-Eigen::ArrayXXf
+Eigen::ArrayXXd
 makeInfluenceMatrixImpl(int m, int n,
                         std::span<const ComputeTask> compTaskVec) {
 #if (BENCHMARKING == 0)
   print(__PRETTY_FUNCTION__);
 #endif
-  Eigen::ArrayXXf infMat(m, n);
+  Eigen::ArrayXXd infMat(m, n);
   infMat.setZero();
 
   std::vector<std::size_t> partioned_indices(compTaskVec[0].points.rows());
-  Eigen::ArrayXf norms(compTaskVec[0].points.rows());
+  Eigen::ArrayXd norms(compTaskVec[0].points.rows());
   Eigen::ArrayXi isNear(norms.size());
-  Eigen::ArrayXf solution;
+  Eigen::ArrayXd solution;
   ComputeTask temp;
   temp.points.conservativeResizeLike(compTaskVec[0].points);
 
-  float limit = 5;
+  double limit = 5;
   for (auto i : RANGE(compTaskVec.size())) {
     const auto &face = compTaskVec[i].face;
 
     // Reference diameter
-    float maxDiameter =
+    double maxDiameter =
         std::max((face.points.row(0) - face.points.row(2)).matrix().norm(),
                  (face.points.row(1) - face.points.row(3)).matrix().norm());
 
@@ -56,7 +56,7 @@ makeInfluenceMatrixImpl(int m, int n,
 
     // update tempTask with far points;k
     auto farIndex = std::span<std::size_t>(splitLoc, partioned_indices.end());
-    // print(((float) farIndex.size() )/((float)
+    // print(((double) farIndex.size() )/((double)
     // (compTaskVec[0].points.rows())));
     if (farIndex.size() > 0) {
       temp.points = compTaskVec[i].points(farIndex, Eigen::placeholders::all);
@@ -67,7 +67,7 @@ makeInfluenceMatrixImpl(int m, int n,
       ComputeTask temp;
       temp.face = compTaskVec[i].face;
       temp.indices = {0};
-      temp.points = (Eigen::ArrayX3f(1, 3) << 0, 0, 0).finished();
+      temp.points = (Eigen::ArrayX3d(1, 3) << 0, 0, 0).finished();
       infMat(temp.face.faceIdx, i) = Singularity::calcSelfInfluence(temp);
     }
     std::iota(partioned_indices.begin(), partioned_indices.end(), 0);
@@ -79,12 +79,12 @@ makeInfluenceMatrixImpl(int m, int n,
   return infMat;
 }
 template <typename Singularity, bool SelfInfluence> // concept constrain
-Eigen::ArrayXXf makeInfluenceMatrix(int m, int n,
+Eigen::ArrayXXd makeInfluenceMatrix(int m, int n,
                                     std::span<const ComputeTask> compTaskVec) {
 #if (BENCHMARKING == 0)
   print(__PRETTY_FUNCTION__);
 #endif
-  Eigen::ArrayXXf infMat(m, n);
+  Eigen::ArrayXXd infMat(m, n);
   infMat.setZero();
 
   std::vector<std::size_t> partioned_indices(compTaskVec[0].points.rows());
@@ -99,7 +99,7 @@ Eigen::ArrayXXf makeInfluenceMatrix(int m, int n,
       ComputeTask temp;
       temp.face = compTaskVec[i].face;
       temp.indices = {0};
-      temp.points = (Eigen::ArrayX3f(1, 3) << 0, 0, 0).finished();
+      temp.points = (Eigen::ArrayX3d(1, 3) << 0, 0, 0).finished();
       infMat(temp.face.faceIdx, i) = Singularity::calcSelfInfluence(temp);
     }
   }
@@ -110,9 +110,9 @@ Eigen::ArrayXXf makeInfluenceMatrix(int m, int n,
   return infMat;
 }
 
-template Eigen::ArrayXXf
+template Eigen::ArrayXXd
 makeInfluenceMatrix<DoubletP, true>(int m, int n,
                                     std::span<const ComputeTask> compTaskVec);
-template Eigen::ArrayXXf
+template Eigen::ArrayXXd
 makeInfluenceMatrix<DoubletP, false>(int m, int n,
                                      std::span<const ComputeTask> compTaskVec);

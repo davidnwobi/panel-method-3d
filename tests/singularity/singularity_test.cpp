@@ -43,11 +43,11 @@ TEST(RECTANGULAR_SOURCE_TEST_Compute_Task, RECTANGULAR_SOURCE_TEST) {
   std::filesystem::path filePath(testDataLoc.string() + "/singlepanel00.txt");
   std::vector<PanelSet> psets = readConvertedComponentsFromFile(filePath);
   auto panelGeoSurf = PanelGeometry(psets[0].body);
-  Eigen::MatrixXf points =
+  Eigen::MatrixXd points =
       FileReaderFactory::make_file_reader("dat", " ", true)
           ->read_data(testDataLoc.string() + "/rectangular_source_test.txt");
 
-  EvalPoints<float> evalPoints;
+  EvalPoints<double> evalPoints;
   evalPoints.mEvalPoints = points.topLeftCorner(points.rows(), 3);
 
   std::vector<std::size_t> idxs(evalPoints.mEvalPoints.rows());
@@ -66,11 +66,11 @@ TEST(RECTANGULAR_DOUBLET_TEST_Compute_Task, RECTANGULAR_DOUBLET_TEST) {
   std::filesystem::path filePath(testDataLoc.string() + "/singlepanel00.txt");
   std::vector<PanelSet> psets = readConvertedComponentsFromFile(filePath);
   auto panelGeoSurf = PanelGeometry(psets[0].body);
-  Eigen::MatrixXf points =
+  Eigen::MatrixXd points =
       FileReaderFactory::make_file_reader("dat", " ", true)
           ->read_data(testDataLoc.string() + "/rectangular_doublet_test.txt");
 
-  EvalPoints<float> evalPoints;
+  EvalPoints<double> evalPoints;
   evalPoints.mEvalPoints = points.topLeftCorner(points.rows(), 3);
 
   std::vector<std::size_t> idxs(evalPoints.mEvalPoints.rows());

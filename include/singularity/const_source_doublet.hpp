@@ -3,9 +3,9 @@
 #include <Eigen/Core>
 
 struct SourceDoubletP {
-  static void calcInfluenceImpl(Eigen::Ref<Eigen::ArrayXf> sourceMat,
-                                Eigen::Ref<Eigen::ArrayXf> doubletMat,
+  static void calcInfluenceImpl(Eigen::Ref<Eigen::ArrayXd> sourceMat,
+                                Eigen::Ref<Eigen::ArrayXd> doubletMat,
                                 const ComputeTask &compTask);
 
-  static float calcSelfInfluenceImpl();
+  static double calcSelfInfluenceImpl();
 };

@@ -16,18 +16,18 @@
 #define SAVE_SYSTEM 1
 struct GMRESSolver : ISolver {
 private:
-  float dropTol = 1e-6;
+  double dropTol = 1e-6;
 
 public:
-  auto setdropTol(float dropTol_) {
+  auto setdropTol(double dropTol_) {
     dropTol = dropTol_;
     return *this;
   }
-  Eigen::VectorXf solve(const Eigen::MatrixXf &lhs, const Eigen::VectorXf &rhs,
-                        float tol = 1e-6, std::size_t maxit = 1000) override {
+  Eigen::VectorXd solve(const Eigen::MatrixXd &lhs, const Eigen::VectorXd &rhs,
+                        double tol = 1e-6, std::size_t maxit = 1000) override {
     std::cout << "Creating...\n";
-    typedef Eigen::SparseMatrix<float> SpMat;
-    typedef Eigen::Triplet<float> T;
+    typedef Eigen::SparseMatrix<double> SpMat;
+    typedef Eigen::Triplet<double> T;
     // SpMat A = lhs.sparseView(dropTol);
     // Eigen::GMRES<SpMat> solver(A);
     std::vector<T> tripletList;
@@ -50,7 +50,7 @@ public:
     Eigen::GMRES<SpMat> solver(A);
     solver.setTolerance(tol);
     solver.setMaxIterations(maxit);
-    Eigen::VectorXf x = rhs;
+    Eigen::VectorXd x = rhs;
     std::cout << "Solving...\n";
     x = solver.solve(rhs);
     std::cout << "#iterations:     " << solver.iterations() << std::endl;

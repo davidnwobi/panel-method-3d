@@ -28,9 +28,9 @@ int main() {
   PanelGeometry<SurfacePanel> body(pset.body);
   PanelGeometry<SurfacePanel> wake(pset.wake);
 
-  EvalPoints<float> evalPoints(body.centrePoints);
+  EvalPoints<double> evalPoints(body.centrePoints);
   //  auto getPanelDiagonalLength =
-  //      []<typename PanelGeo>(const PanelGeo &panelGeo) -> Eigen::ArrayXf {
+  //      []<typename PanelGeo>(const PanelGeo &panelGeo) -> Eigen::ArrayXd {
   //    const auto &faceIdx = panelGeo.mSurface.mFaceNodeIdx;
   //    const auto &surfPoints = panelGeo.mSurface.mPoints;
   //

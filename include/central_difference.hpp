@@ -30,15 +30,15 @@ inline T BackwardsDifferenceScalar(T xp2, T xp1, T x0, T fp2, T fp1, T f0){
 }
 
 // template <bool ColWise=true, class Derived1, class Derived2>
-// Eigen::ArrayXXf centralDifference(const Eigen::DenseBase<Derived1>& x, const Eigen::DenseBase<Derived2>&  f){
+// Eigen::ArrayXXd centralDifference(const Eigen::DenseBase<Derived1>& x, const Eigen::DenseBase<Derived2>&  f){
 // 	if constexpr(!ColWise){
-// 		Eigen::ArrayXXf out = centralDifference<true>(x.transpose(), f.transpose());
+// 		Eigen::ArrayXXd out = centralDifference<true>(x.transpose(), f.transpose());
 // 		out.transposeInPlace();
 // 		return out; 
 // 	}	
 // 	
 // 	
-// 	Eigen::ArrayXXf out(x.rows(), x.cols());
+// 	Eigen::ArrayXXd out(x.rows(), x.cols());
 // 	if (x.rows() ==1){
 // 		out << f;
 // 		return x;
@@ -55,15 +55,15 @@ inline T BackwardsDifferenceScalar(T xp2, T xp1, T x0, T fp2, T fp1, T f0){
 // }
 
 template <bool ColWise=true, class Derived1, class Derived2>
-Eigen::ArrayXXf centralDifference(const Eigen::DenseBase<Derived1>& x, const Eigen::DenseBase<Derived2>&  f){
+Eigen::ArrayXXd centralDifference(const Eigen::DenseBase<Derived1>& x, const Eigen::DenseBase<Derived2>&  f){
 	if constexpr(!ColWise){
-		Eigen::ArrayXXf out = centralDifference<true>(x.transpose(), f.transpose());
+		Eigen::ArrayXXd out = centralDifference<true>(x.transpose(), f.transpose());
 		out.transposeInPlace();
 		return out; 
 	}	
 	
 	
-	Eigen::ArrayXXf out(x.rows(), x.cols());
+	Eigen::ArrayXXd out(x.rows(), x.cols());
 	if (x.rows() ==1){
 		out << f;
 		return x;

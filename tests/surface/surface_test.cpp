@@ -7,8 +7,8 @@ std::filesystem::path testDataLoc(std::string(SOURCE_DIR) + "/tests/test_data");
 using namespace Eigen;
 
 TEST(VMERGE, SimpleMerge) {
-  Eigen::MatrixXf matA = MatrixXf::Random(10, 4);
-  Eigen::MatrixXf matB = MatrixXf::Random(10, 4);
+  Eigen::MatrixXd matA = MatrixXd::Random(10, 4);
+  Eigen::MatrixXd matB = MatrixXd::Random(10, 4);
 
   auto matC = vMerge(matA, matB);
 
@@ -19,12 +19,12 @@ TEST(VMERGE, SimpleMerge) {
 TEST(VMERGE, SimpleMergeIntoSameArray) {
   // Test Merging into the same array;
 
-  Eigen::MatrixXf matA = MatrixXf::Random(4, 4);
-  Eigen::MatrixXf matB = MatrixXf::Random(5, 4);
-  Eigen::MatrixXf matD = MatrixXf::Random(3, 4);
+  Eigen::MatrixXd matA = MatrixXd::Random(4, 4);
+  Eigen::MatrixXd matB = MatrixXd::Random(5, 4);
+  Eigen::MatrixXd matD = MatrixXd::Random(3, 4);
 
-  Eigen::MatrixXf matC(
-      Eigen::Map<Eigen::MatrixXf>(matA.data(), matA.rows(), matA.cols()));
+  Eigen::MatrixXd matC(
+      Eigen::Map<Eigen::MatrixXd>(matA.data(), matA.rows(), matA.cols()));
   matC = vMerge(matC, matB);
   matC = vMerge(matC, matD);
 
@@ -36,8 +36,8 @@ TEST(VMERGE, SimpleMergeIntoSameArray) {
 }
 
 TEST(HMERGE, SimpleMerge) {
-  Eigen::MatrixXf matA = MatrixXf::Random(10, 4);
-  Eigen::MatrixXf matB = MatrixXf::Random(10, 4);
+  Eigen::MatrixXd matA = MatrixXd::Random(10, 4);
+  Eigen::MatrixXd matB = MatrixXd::Random(10, 4);
 
   auto matC = hMerge(matA, matB);
 
@@ -48,12 +48,12 @@ TEST(HMERGE, SimpleMerge) {
 TEST(HMERGE, SimpleMergeIntoSameArray) {
   // Test Merging into the same array;
 
-  Eigen::MatrixXf matA = MatrixXf::Random(4, 4);
-  Eigen::MatrixXf matB = MatrixXf::Random(4, 5);
-  Eigen::MatrixXf matD = MatrixXf::Random(4, 3);
+  Eigen::MatrixXd matA = MatrixXd::Random(4, 4);
+  Eigen::MatrixXd matB = MatrixXd::Random(4, 5);
+  Eigen::MatrixXd matD = MatrixXd::Random(4, 3);
 
-  Eigen::MatrixXf matC(
-      Eigen::Map<Eigen::MatrixXf>(matA.data(), matA.rows(), matA.cols()));
+  Eigen::MatrixXd matC(
+      Eigen::Map<Eigen::MatrixXd>(matA.data(), matA.rows(), matA.cols()));
   matC = hMerge(matC, matB);
   matC = hMerge(matC, matD);
 

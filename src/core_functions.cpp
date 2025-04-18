@@ -25,7 +25,7 @@ std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
                                       const std::string &outputFile,
                                       double dropTol, bool rotate_wake) {
 
-  Eigen::Array3f freeStream = getFreeStream(flowParams.aoa, 1);
+  Eigen::Array3d freeStream = getFreeStream(flowParams.aoa, 1);
   auto pset = readConvertedComponentsFromFile(inputFile);
   if (rotate_wake) {
     print("Aligning Wake\n");
@@ -39,7 +39,7 @@ std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
   auto [lhs, rhs, sourceStrength] =
       assembleLhs(panelGeometries, evalPoints, freeStream);
 
-  Eigen::ArrayXf doubletStrength =
+  Eigen::ArrayXd doubletStrength =
       GMRESSolver().setdropTol(dropTol).solve(lhs, rhs);
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);

@@ -10,8 +10,8 @@ template <SurfaceType T> struct PanelGeometry;
 
 namespace PanelGeometryUtils {
 
-Eigen::MatrixXf rowwiseCross(const Eigen::MatrixXf &A,
-                             const Eigen::MatrixXf &B);
+Eigen::MatrixXd rowwiseCross(const Eigen::MatrixXd &A,
+                             const Eigen::MatrixXd &B);
 
 } // namespace PanelGeometryUtils
 
@@ -29,9 +29,9 @@ public:
   SurfacePanel::NodeMatrix tangentYVectors;
   SurfacePanel::NodeMatrix normalVectors;
 
-  Eigen::ArrayXf areas;
-  std::vector<Eigen::Isometry3f> conversionMatrices;
-  std::vector<Eigen::ArrayX3f> localFaceVertices;
+  Eigen::ArrayXd areas;
+  std::vector<Eigen::Isometry3d> conversionMatrices;
+  std::vector<Eigen::ArrayX3d> localFaceVertices;
 
   T mSurface;
 
@@ -41,9 +41,9 @@ public:
   PanelGeometry(T &&surface) noexcept;
   void panelGeoInit();
   void calculateCentrePointsandVectors();
-  Eigen::Isometry3f createLocalConversionMatrix(std::size_t faceIdx);
-  Eigen::ArrayX3f convertToLocal(int faceIdx, const ArrayX3f &points) const;
-  float calcPolyArea(const Eigen::ArrayX3f &vertices) const;
+  Eigen::Isometry3d createLocalConversionMatrix(std::size_t faceIdx);
+  Eigen::ArrayX3d convertToLocal(int faceIdx, const ArrayX3d &points) const;
+  double calcPolyArea(const Eigen::ArrayX3d &vertices) const;
 };
 
 using PanelGeometryPair =

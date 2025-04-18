@@ -10,31 +10,31 @@
 
 void postProcessPanelResults(
     const PanelGeometry<SurfacePanel> surfacePanelGeo,
-    const Eigen::Ref<const Eigen::ArrayXXf> &surfaceVelocties,
+    const Eigen::Ref<const Eigen::ArrayXXd> &surfaceVelocties,
     AeroResults &out);
 
 void postProcessPolars(AeroResults &out);
 
-auto hChunk1D(const Eigen::Ref<const Eigen::ArrayXf> &combined,
+auto hChunk1D(const Eigen::Ref<const Eigen::ArrayXd> &combined,
               std::span<const size_t> chunkStart,
               std::span<const size_t> chunkSize);
 
-Eigen::ArrayXXf calculatePanelVelocities(
+Eigen::ArrayXXd calculatePanelVelocities(
     const PanelGeometry<SurfacePanel> &panel,
-    const Eigen::Ref<const Eigen::ArrayXf> &doubletStrength,
-    const Eigen::Ref<const Eigen::ArrayXf> &sourceStrength,
-    const Eigen::Ref<const Eigen::ArrayXf> &freeStream);
+    const Eigen::Ref<const Eigen::ArrayXd> &doubletStrength,
+    const Eigen::Ref<const Eigen::ArrayXd> &sourceStrength,
+    const Eigen::Ref<const Eigen::ArrayXd> &freeStream);
 
 AeroResults
 postProcessBodyImpl(const PanelGeometry<SurfacePanel> surfacePanelGeo,
-                    const Eigen::Ref<const Eigen::ArrayXXf> &surfaceVelocities,
-                    const Eigen::Ref<const Eigen::ArrayXXf> &doubletStrength,
-                    const FlowParams &flowParams, float refArea);
+                    const Eigen::Ref<const Eigen::ArrayXXd> &surfaceVelocities,
+                    const Eigen::Ref<const Eigen::ArrayXXd> &doubletStrength,
+                    const FlowParams &flowParams, double refArea);
 
 std::vector<AeroResults>
 postProcessBody(std::span<const PanelGeometryPair> panelGeometries,
-                const Eigen::Ref<const Eigen::ArrayXf> &doubletStrengths,
-                const Eigen::Ref<const Eigen::ArrayXf> &sourceStrengths,
+                const Eigen::Ref<const Eigen::ArrayXd> &doubletStrengths,
+                const Eigen::Ref<const Eigen::ArrayXd> &sourceStrengths,
                 const FlowParams &flowParams, const ReferenceGeom &refGeom);
 
 void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
@@ -42,14 +42,14 @@ void writeBodyData(const std::string outfile, const PanelGeometryPair &ppair,
 
 auto postProcessTotalPolars(auto &&outO) {
   auto out = std::move(outO);
-  float q =
+  double q =
       0.5 * out.lastParams.rho * out.lastParams.Vinf * out.lastParams.Vinf;
-  Eigen::Array3f F(3);
+  Eigen::Array3d F(3);
   F << out.polars["Fx"], out.polars["Fy"], out.polars["Fz"];
-  Eigen::ArrayXf CF = F / (q * out.refGeom.refArea);
-  float CL = (-CF(0) * std::sin(out.lastParams.aoa * M_PI / 180) +
+  Eigen::ArrayXd CF = F / (q * out.refGeom.refArea);
+  double CL = (-CF(0) * std::sin(out.lastParams.aoa * M_PI / 180) +
                CF(2) * std::cos(out.lastParams.aoa * M_PI / 180));
-  float CD = (CF(0) * std::cos(out.lastParams.aoa * M_PI / 180) +
+  double CD = (CF(0) * std::cos(out.lastParams.aoa * M_PI / 180) +
                CF(2) * std::sin(out.lastParams.aoa * M_PI / 180));
 
   out.polars["aoa"] = out.lastParams.aoa;
@@ -83,7 +83,7 @@ void accumulateTotalPolars(std::string outdir, Ra &&R) {
 
   std::vector<std::string> headers = {"aoa", "Fx",  "Fy", "Fz", "CFx",
                                       "CFy", "CFz", "CL", "CD"};
-  Eigen::ArrayXXf polars(totalPolars.size(), headers.size());
+  Eigen::ArrayXXd polars(totalPolars.size(), headers.size());
   for (auto i : RANGE(totalPolars.size())) {
     for (auto j : RANGE(headers.size())) {
       polars(i, j) = totalPolars[i].polars[headers[j]];

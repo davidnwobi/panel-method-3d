@@ -67,9 +67,9 @@ public:
    * given file.
    *
    * @param fileToOpen The name of the file to open and read data from.
-   * @return Eigen::MatrixXf The data read from the file.
+   * @return Eigen::MatrixXd The data read from the file.
    */
-  virtual Eigen::MatrixXf read_data(std::string fileToOpen) = 0;
+  virtual Eigen::MatrixXd read_data(std::string fileToOpen) = 0;
 
   /**
    * @brief Saves data to a file.
@@ -80,7 +80,7 @@ public:
    * @param fileName The name of the file to save data to.
    * @param matrix The matrix data to save.
    */
-  virtual void save_data(std::string fileName, Eigen::MatrixXf matrix) = 0;
+  virtual void save_data(std::string fileName, Eigen::MatrixXd matrix) = 0;
 
   /**
    * @brief Virtual destructor.
@@ -117,9 +117,9 @@ public:
    * Implements reading data from the specified CSV file.
    *
    * @param fileToOpen The name of the CSV file to open and read data from.
-   * @return Eigen::MatrixXf The data read from the CSV file.
+   * @return Eigen::MatrixXd The data read from the CSV file.
    */
-  Eigen::MatrixXf read_data(std::string fileToOpen) override;
+  Eigen::MatrixXd read_data(std::string fileToOpen) override;
 
   /**
    * @brief Saves data to a CSV file.
@@ -129,7 +129,7 @@ public:
    * @param fileName The name of the CSV file to save data to.
    * @param matrix The matrix data to save.
    */
-  void save_data(std::string fileName, Eigen::MatrixXf matrix) override;
+  void save_data(std::string fileName, Eigen::MatrixXd matrix) override;
 
   /**
    * @brief Virtual destructor.
@@ -285,7 +285,7 @@ constexpr auto vMerge(EigenMatrixTypeA &&matA, EigenMatrixTypeB &&matB) {
   return matC;
 }
 
-template <class ReturnType = Eigen::ArrayXXf, class DerivedA, class DerivedB>
+template <class ReturnType = Eigen::ArrayXXd, class DerivedA, class DerivedB>
 ReturnType hMerge(const Eigen::EigenBase<DerivedA> &matA,
                   const Eigen::EigenBase<DerivedB> &matB) {
 
@@ -352,9 +352,9 @@ std::string demangle(const char *mangledName);
   std::cout << "Type of " #obj ": " << demangle(typeid(obj).name())            \
             << std::endl;
 
-Eigen::ArrayXf
-rowwiseDotProduct(const Eigen::Ref<const Eigen::ArrayXXf> &a1,
-                  const Eigen::Ref<const Eigen::RowVectorXf> &a2);
+Eigen::ArrayXd
+rowwiseDotProduct(const Eigen::Ref<const Eigen::ArrayXXd> &a1,
+                  const Eigen::Ref<const Eigen::RowVectorXd> &a2);
 
 template <typename MatA, typename MatB, typename... Rest>
 auto vMergeRecursive(MatA &&matA, MatB &&matB,

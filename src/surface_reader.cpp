@@ -7,7 +7,7 @@
 #include <utility>
 
 template int stringToNum<int>(const std::string &str);
-template float stringToNum<float>(const std::string &str);
+template double stringToNum<double>(const std::string &str);
 
 template void readTable<SurfacePanel::NodeMatrix>(SurfaceFileReader &,
                                                   SurfacePanel::NodeMatrix &);

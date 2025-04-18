@@ -7,16 +7,16 @@
 /// @returns the exponent and a normalized mantissa with the relationship:
 /// [a * 2^b] = x
 
-inline float logapprox(float val) {
+inline double logapprox(double val) {
   union {
-    float f;
+    double f;
     int32_t i;
   } valu;
-  float exp, addcst, x;
+  double exp, addcst, x;
   valu.f = val;
   exp = valu.i >> 23;
   /* -89.970756366f = -127 * log(2) + constant term of polynomial bellow. */
-  addcst = val > 0 ? -89.970756366f : -std::numeric_limits<float>::infinity();
+  addcst = val > 0 ? -89.970756366f : -std::numeric_limits<double>::infinity();
   valu.i = (valu.i & 0x7FFFFF) | 0x3F800000;
   x = valu.f;
 
@@ -27,9 +27,9 @@ inline float logapprox(float val) {
     > plot(f+(x-1)*log(2)-log(x), [1,2]);
     > f+(x-1)*log(2)
  */
-  return x * (3.529304993f +
+  return x * (3.529304993d +
               x * (-2.461222105f +
                    x * (1.130626167f +
-                        x * (-0.288739945f + x * 3.110401639e-2f)))) +
+                        x * (-0.288739945f + x * 3.110401639e-2d)))) +
          (addcst + 0.6931471805f * exp);
 }

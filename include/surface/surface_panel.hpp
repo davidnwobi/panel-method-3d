@@ -4,7 +4,7 @@
 using namespace Eigen;
 struct SurfacePanel {
 
-  using NodeMatrix = Array<float, Dynamic, 3>;
+  using NodeMatrix = Array<double, Dynamic, 3>;
   using FaceNodeIdxMatrix = Array<int, Dynamic, 4>;
 
   NodeMatrix mPoints;
