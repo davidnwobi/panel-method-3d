@@ -1,6 +1,5 @@
 
 #include "singularity/const_source_doublet.hpp"
-#include "singularity/const_source_far.hpp"
 #include "singularity/internal_functions.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>

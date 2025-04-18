@@ -73,13 +73,8 @@ target_link_libraries(mat_reader Eigen3::Eigen)
 # target_link_libraries(sleef_test sleef tlfloat PanelMethods)
 
 # NOTE: Main
-add_executable (main main.cpp)
-target_link_libraries(main PUBLIC PanelMethods mat_reader)
 
 
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET main PROPERTY CXX_STANDARD 23)
-endif()
 
 add_executable (mainM mainMulti.cpp)
 target_link_libraries(mainM PUBLIC PanelMethods mat_reader )

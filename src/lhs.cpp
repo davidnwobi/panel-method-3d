@@ -2,7 +2,6 @@
 #include "mat_reader/mat_reader.hpp"
 #include "panel_geo/panel_geo.hpp"
 #include "singularity/const_doublet.hpp"
-#include "singularity/const_source.hpp"
 #include "singularity/const_source_doublet.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
