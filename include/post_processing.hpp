@@ -66,7 +66,7 @@ void accumulateTotalPolars(std::string outdir, Ra &&R) {
 
   namespace views = std::views;
   // Accumulate Forces
-  PRINT_TYPE(R[0]);
+  // PRINT_TYPE(R[0]);
   auto totalResults =
       R | views::transform([](AeroResults_range auto &&results) {
         AeroResults accResults = results[0];
@@ -89,6 +89,6 @@ void accumulateTotalPolars(std::string outdir, Ra &&R) {
       polars(i, j) = totalPolars[i].polars[headers[j]];
     }
   }
-  std::cout << polars;
+  // std::cout << polars;
   savetxt(outdir + "/polars.dat", polars, " ", headers);
 }

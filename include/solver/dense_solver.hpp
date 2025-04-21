@@ -3,10 +3,13 @@
 #include <Eigen/Core>
 #include <iostream>
 
-struct DenseSolver : ISolver {
-  Eigen::VectorXd solve(const Eigen::MatrixXd &lhs,
-                        const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 10) override {
-    std::cout << "Solving...\n";
-    return lhs.fullPivLu().solve(rhs);
+struct DenseSolver : ISolver<DenseSolver> {
+
+  DenseSolver() : ISolver<DenseSolver>() {}
+  template <typename MatrixType, typename VecType>
+  static Eigen::VectorXd solveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
+                                   const Eigen::MatrixBase<VecType> &rhs,
+                                   double tol = 1e-6, std::size_t maxit = 10) {
+    return lhs.partialPivLu().solve(rhs);
   }
 };

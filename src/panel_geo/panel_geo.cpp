@@ -90,7 +90,7 @@ template <typename Derived> void normalize(DenseBase<Derived> &mat) {
 template <SurfaceType T>
 void PanelGeometry<T>::calculateCentrePointsandVectors() {
 
-  print(__PRETTY_FUNCTION__);
+  // print(__PRETTY_FUNCTION__);
   int numRows = mSurface.mFaceNodeIdx.rows();
 
   normalVectors.setZero(numRows, VecType::ColsAtCompileTime);

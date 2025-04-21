@@ -2,43 +2,41 @@
 #include "solver/isolver.hpp"
 #include "utils/utils.hpp"
 #include <Eigen/Core>
+#include <Eigen/PardisoSupport>
 #include <Eigen/Sparse>
 #include <Eigen/SparseLU>
 #include <iostream>
 #include <vector>
 // #define ANALYSIS_DIR
 // "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
-struct SparseSolver : ISolver {
-  Eigen::VectorXd solve(const Eigen::MatrixXd &lhs,
-                        const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 10) override {
+struct SparseSolver : ISolver<SparseSolver> {
+
+  inline static double spTol = 1e-6;
+
+public:
+  SparseSolver() : ISolver<SparseSolver>() {}
+  auto setspTol(double spTol_) {
+    spTol = spTol_;
+    return *this;
+  }
+  template <typename MatrixType, typename VecType>
+  static Eigen::VectorXd solveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
+                                   const Eigen::MatrixBase<VecType> &rhs,
+                                   double tol = 1e-6, std::size_t maxit = 10) {
     // FileReaderFactory::make_file_reader("dat", " ",
     // true)->save_data(std::string(ANALYSIS_DIR) + "/infMat.dat", lhs);
-    double lim = 1e-10;
-#if (BENCHMARKING == 0)
-    std::cout << "Creating...\n";
-#endif
     typedef Eigen::SparseMatrix<double> SpMat;
     typedef Eigen::Triplet<double> T;
 
-    std::vector<T> tripletList;
-    tripletList.reserve(lhs.rows() * lhs.cols());
-    for (int i = 0; i < lhs.rows(); i++) {
-      for (int j = 0; j < lhs.cols(); j++) {
-        if (std::abs(lhs(i, j)) > lim) {
-          tripletList.push_back(T(i, j, lhs(i, j)));
-        }
-      }
-    }
     SpMat A(lhs.rows(), lhs.cols());
-    A.setFromTriplets(tripletList.begin(), tripletList.end());
+    A = lhs.sparseView(spTol, 1);
+    A.makeCompressed();
+#ifdef EIGEN_USE_MKL
+    Eigen::PardisoLU<SpMat> solver;
+#else
     Eigen::SparseLU<SpMat> solver;
-#if (BENCHMARKING == 0)
-    std::cout << "Computing...\n";
 #endif
     solver.compute(A);
-#if (BENCHMARKING == 0)
-    std::cout << "Solving...\n";
-#endif
     return solver.solve(rhs);
   }
 };

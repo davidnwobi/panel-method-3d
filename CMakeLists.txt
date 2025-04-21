@@ -14,11 +14,12 @@ else()
   add_compile_definitions(BENCHMARKING=0)
 endif()
 set(SLEEF_ENABLE_LTO on)
+set(EIGEN_USE_MKL_ALL on)
 add_compile_definitions(SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 add_compile_definitions(ANALYSIS_DIR="/home/okwuchukwu-nwobi/Projects/PanelMethods/python/out_cpp")
 #add_compile_options(-Werror -Wall -Wextra -pedantic-errors -Wno-conversion -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-sign-compare -g -O3)
-add_compile_options(-O3 -mavx512f -march=znver4 -mtune=znver4 -flto=8 -ffast-math -funsafe-math-optimizations -ffunction-sections)
-add_compile_options(-g)
+# add_compile_options(-O3 -mavx512f -march=native -mtune=znver4 -flto=8 -ffast-math -funsafe-math-optimizations -ffunction-sections)
+add_compile_options(-O3 -mavx512f -march=native)
 
 # EXTERNAL PACKAGES 
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
@@ -43,7 +44,7 @@ file(
   "${PROJECT_SOURCE_DIR}/src/singularity/*.cpp"
 )
 
-
+message (STATUS "EigenInuclude is: " ${Eigen3_DIR})
 message (STATUS "Sources are: " ${SOURCES})
 add_library(
   PanelMethods 
@@ -60,8 +61,8 @@ set_target_properties(
 #link_directories(${PCL_LIBRARY_DIRS})
 #add_definitions(${PCL_DEFINITIONS})
 
-target_include_directories(PanelMethods PUBLIC ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(PanelMethods PUBLIC Eigen3::Eigen )
+target_include_directories(PanelMethods PUBLIC ${PROJECT_SOURCE_DIR}/include )
+target_link_libraries(PanelMethods PUBLIC Eigen3::Eigen mkl_intel_lp64 mkl_intel_thread mkl_core iomp5)
 
 
 add_library(mat_reader ${PROJECT_SOURCE_DIR}/src/mat_reader/mat_reader.cpp) 
@@ -74,10 +75,8 @@ target_link_libraries(mat_reader Eigen3::Eigen)
 
 # NOTE: Main
 
-
-
 add_executable (mainM mainMulti.cpp)
-target_link_libraries(mainM PUBLIC PanelMethods mat_reader )
+target_link_libraries(mainM PUBLIC PanelMethods mat_reader)
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
@@ -90,6 +89,38 @@ add_executable(bench bench.cpp)
 # add_dependencies(bench libsleef)
 target_link_libraries(bench PUBLIC benchmark::benchmark PanelMethods mat_reader)
 target_compile_definitions(bench PUBLIC BENCHMARK_STATIC_DEFINE)
+set(BENCHMARK_ENABLE_TESTING OFF)
+
+add_executable(bench_solver bench_solver.cpp)
+# add_dependencies(bench libsleef)
+target_link_libraries(bench_solver PUBLIC benchmark::benchmark PanelMethods mat_reader)
+target_compile_definitions(bench_solver PUBLIC BENCHMARK_STATIC_DEFINE)
+set(BENCHMARK_ENABLE_TESTING OFF)
+
+add_executable(bench_utilization bench_utilization.cpp)
+# add_dependencies(bench libsleef)
+target_link_libraries(bench_utilization PUBLIC benchmark::benchmark PanelMethods mat_reader)
+target_compile_definitions(bench_utilization PUBLIC BENCHMARK_STATIC_DEFINE)
+set(BENCHMARK_ENABLE_TESTING OFF)
+
+
+
+add_executable(bench_dense_solvers bench_dense_solvers.cpp)
+# add_dependencies(bench libsleef)
+target_link_libraries(bench_dense_solvers PUBLIC benchmark::benchmark PanelMethods mat_reader)
+target_compile_definitions(bench_dense_solvers PUBLIC BENCHMARK_STATIC_DEFINE)
+set(BENCHMARK_ENABLE_TESTING OFF)
+
+add_executable(iter_bench iter_bench.cpp)
+# add_dependencies(bench libsleef)
+target_link_libraries(iter_bench PUBLIC benchmark::benchmark PanelMethods mat_reader)
+target_compile_definitions(iter_bench PUBLIC BENCHMARK_STATIC_DEFINE)
+set(BENCHMARK_ENABLE_TESTING OFF)
+
+add_executable(perf_test perf_test.cpp)
+# add_dependencies(bench libsleef)
+target_link_libraries(perf_test PUBLIC benchmark::benchmark PanelMethods mat_reader)
+target_compile_definitions(perf_test PUBLIC BENCHMARK_STATIC_DEFINE)
 set(BENCHMARK_ENABLE_TESTING OFF)
 
 #  TODO: Add tests and install targets if needed.

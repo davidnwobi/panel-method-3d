@@ -1,4 +1,7 @@
-﻿#include "aerocalcs/aerocalcsingle.hpp"
+﻿
+#include "utils/utils.hpp"
+#define EIGEN_USE_MKL_ALL
+#include "aerocalcs/aerocalcsingle.hpp"
 #include "core_functions.hpp"
 #include "helpers.hpp"
 #include "post_processing.hpp"
@@ -9,6 +12,7 @@
 #include <vector>
 
 int main(int argc, char *argv[]) {
+  print("Eigne Default Align Bytes", EIGEN_DEFAULT_ALIGN_BYTES);
   std::string inputFile;
   std::string outputFile;
   std::string paramsFile;
@@ -32,7 +36,7 @@ int main(int argc, char *argv[]) {
       dropTol = std::stod(argv[++i]);
     }
   }
-  printf("%f", dropTol);
+  // printf("%f", dropTol);
   if (inputFile.empty() || outputFile.empty() || paramsFile.empty()) {
     std::cerr << "Usage: " << argv[0]
               << " -i <input_file> -o <output_file> -p <params_file>\n";
@@ -57,6 +61,7 @@ int main(int argc, char *argv[]) {
     results.reserve(resultsView.size());
     std::ranges::copy(resultsView, std::back_inserter(results));
     accumulateTotalPolars(outputFile, results);
+    print("\n");
   }
 
   return 0;

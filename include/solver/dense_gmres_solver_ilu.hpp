@@ -15,14 +15,15 @@
 
 #define SAVE_SYSTEM 0
 #define ITER_RES 0
+using namespace Eigen;
 
-struct GMRESSolver : ISolver<GMRESSolver> {
-  inline static double spTol = 1e-6;
+struct DenseGMRESILUSolver : ISolver<DenseGMRESILUSolver> {
+  static inline double dropTol = 1e-6;
 
 public:
-  GMRESSolver() : ISolver<GMRESSolver>() {}
-  auto setspTol(double spTol_) {
-    spTol = spTol_;
+  DenseGMRESILUSolver() : ISolver<DenseGMRESILUSolver>() {}
+  auto setdropTol(double dropTol_) {
+    dropTol = dropTol_;
     return *this;
   }
   template <typename MatrixType, typename VecType>
@@ -31,22 +32,13 @@ public:
                                    double tol = 1e-6,
                                    std::size_t maxit = 1000) {
     // std::cout << "Creating...\n";
-    typedef Eigen::SparseMatrix<double> SpMat;
-    typedef Eigen::Triplet<double> T;
+    using SpMat = Eigen::SparseMatrix<double>;
+    Eigen::SparseMatrix<double> precond_mat(lhs.rows(), lhs.cols());
+    precond_mat = lhs.sparseView(dropTol, 1);
+    precond_mat.makeCompressed();
 
-    SpMat A(lhs.rows(), lhs.cols());
-    A = lhs.sparseView(spTol, 1);
-    A.makeCompressed();
-    // A.setFromTriplets(tripletList.begin(), tripletList.end());
-    // print("Sparsity: ",
-
-    // printf("\n");
-    // printf("%1.10f\n", spTol);
-    // printf("%1.6f\n",
-    //        ((double)A.nonZeros()) / ((double)(lhs.rows() * lhs.cols())));
-
-    // printf("DropTol: %1.6f\n", dropTol);
-    const Eigen::IdentityPreconditioner preconditioner;
+    Eigen::IncompleteLUT<double> preconditioner(
+        precond_mat, NumTraits<double>::dummy_precision(), 1);
     // print("Sparsity: ",
 
     // printf("DropTol: %1.6f\n", dropTol);
@@ -55,8 +47,7 @@ public:
     x.setZero();
     Eigen::Index iters = 1000;
     Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, tol);
-    // std::cout << "#iterations:     " << iters << std::endl;
-    // std::cout << "estimated error: " << tol << std::endl;
+
     // std::cout << "#iterations:     " << solver.iterations() << std::endl;
     // std::cout << "estimated error: " << solver.error() << std::endl;
 

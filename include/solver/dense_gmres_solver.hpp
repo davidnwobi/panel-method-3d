@@ -15,37 +15,28 @@
 
 #define SAVE_SYSTEM 0
 #define ITER_RES 0
+using namespace Eigen;
 
-struct GMRESSolver : ISolver<GMRESSolver> {
+struct DenseGMRESSolver : ISolver<DenseGMRESSolver> {
+
   inline static double spTol = 1e-6;
 
 public:
-  GMRESSolver() : ISolver<GMRESSolver>() {}
-  auto setspTol(double spTol_) {
-    spTol = spTol_;
+  auto setspTol(double pTol_) {
+    spTol = pTol_;
     return *this;
   }
+  DenseGMRESSolver() : ISolver<DenseGMRESSolver>() {}
   template <typename MatrixType, typename VecType>
   static Eigen::VectorXd solveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
                                    const Eigen::MatrixBase<VecType> &rhs,
                                    double tol = 1e-6,
                                    std::size_t maxit = 1000) {
     // std::cout << "Creating...\n";
-    typedef Eigen::SparseMatrix<double> SpMat;
-    typedef Eigen::Triplet<double> T;
+    using SpMat = Eigen::SparseMatrix<double>;
+    Eigen::SparseMatrix<double> precond_mat(lhs.rows(), lhs.cols());
+    precond_mat = lhs.sparseView(1e-2, 1);
 
-    SpMat A(lhs.rows(), lhs.cols());
-    A = lhs.sparseView(spTol, 1);
-    A.makeCompressed();
-    // A.setFromTriplets(tripletList.begin(), tripletList.end());
-    // print("Sparsity: ",
-
-    // printf("\n");
-    // printf("%1.10f\n", spTol);
-    // printf("%1.6f\n",
-    //        ((double)A.nonZeros()) / ((double)(lhs.rows() * lhs.cols())));
-
-    // printf("DropTol: %1.6f\n", dropTol);
     const Eigen::IdentityPreconditioner preconditioner;
     // print("Sparsity: ",
 
@@ -55,8 +46,6 @@ public:
     x.setZero();
     Eigen::Index iters = 1000;
     Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, tol);
-    // std::cout << "#iterations:     " << iters << std::endl;
-    // std::cout << "estimated error: " << tol << std::endl;
     // std::cout << "#iterations:     " << solver.iterations() << std::endl;
     // std::cout << "estimated error: " << solver.error() << std::endl;
 

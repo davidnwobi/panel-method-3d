@@ -9,7 +9,7 @@
 #include <concepts.hpp>
 
 #include <ranges>
-
+#define BENCHMARKING 1
 template <typename Derived1, typename Derived2>
 void assembleLhsImpl(Eigen::MatrixBase<Derived1> &lhs,
                      Eigen::MatrixBase<Derived2> &rhs_mat,
@@ -95,7 +95,7 @@ assembleLhs(std::span<const PanelGeometryPair> panelGeometries,
   rhs.setZero();
   Eigen::VectorXd sourceStrength(mDims);
   std::size_t iPoints = 0;
-  print("EIGEN_MAX_ALIGN_BYTES: ", EIGEN_MAX_ALIGN_BYTES);
+  // print("EIGEN_MAX_ALIGN_BYTES: ", EIGEN_MAX_ALIGN_BYTES);
   for (auto i : RANGE(panelGeometries.size())) {
 
     const auto &surf = panelGeometries[i].first;

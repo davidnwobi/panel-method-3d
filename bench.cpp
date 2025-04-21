@@ -34,8 +34,8 @@ using ul = long long;
 // #define _LOG(v1) Sleef_logf8_u10avx2(v1)
 // #define _ATAN(v1) Sleef_atanf8_u10avx2(v1)
 //
-// void R12_Q12_J12_AVX2(double *R12_, double *Q12_, double *J12_, double *x, double
-// *y,
+// void R12_Q12_J12_AVX2(double *R12_, double *Q12_, double *J12_, double *x,
+// double *y,
 //                       double *z, double *node1, double *node2, size_t N) {
 //   const size_t PACK = 8;
 //   // Preliminary Constants
@@ -127,8 +127,8 @@ using ul = long long;
 //   }
 // }
 //
-// void R12_Q12_J12_NORM(double *R12_, double *Q12_, double *J12_, double *x, double
-// *y,
+// void R12_Q12_J12_NORM(double *R12_, double *Q12_, double *J12_, double *x,
+// double *y,
 //                       double *z, double *node1, double *node2, size_t N) {
 //   const double x1 = node1[0], y1 = node1[1];
 //   const double x2 = node2[0], y2 = node2[1];
