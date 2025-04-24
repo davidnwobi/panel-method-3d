@@ -50,6 +50,8 @@ public:
     x.setZero();
     Eigen::Index iters = 1000;
     Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, tol);
+    // std::cout << "#iterations:     " << iters << std::endl;
+    // std::cout << "estimated error: " << tol << std::endl;
     // std::cout << "#iterations:     " << solver.iterations() << std::endl;
     // std::cout << "estimated error: " << solver.error() << std::endl;
 

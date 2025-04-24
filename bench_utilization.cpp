@@ -41,38 +41,18 @@ public:
   void TearDown(::benchmark::State &state) {}
 };
 
-// BENCHMARK_DEFINE_F(MyFixture, bench_dense_gmres_ilu)
-// (benchmark::State &state) {
-//   using SpMat = Eigen::SparseMatrix<double>;
-//   Eigen::SparseMatrix<double> precond_mat(lhs.rows(), lhs.cols());
-//   precond_mat = lhs.sparseView(this->dropTols[state.range(0)], 1);
-//   precond_mat.makeCompressed();
-//   const Eigen::IncompleteLUT<double> preconditioner(
-//       precond_mat, NumTraits<double>::dummy_precision(), 1);
-//   Eigen::VectorXd x(rhs.rows());
-//   for (auto _ : state) {
-//     double err = tol;
-//     Eigen::Index iters = 1000;
-//     x.setZero();
-//     Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, err);
-//   }
-//
-//   state.SetBytesProcessed((ul)state.iterations() *
-//                           (ul)(lhs.rows() * lhs.cols()) * (ul)16);
-// }
-BENCHMARK_F(MyFixture, bench_dense_gmres_ilu)
+BENCHMARK_DEFINE_F(MyFixture, bench_dense_gmres_ilu)
 (benchmark::State &state) {
   using SpMat = Eigen::SparseMatrix<double>;
   Eigen::SparseMatrix<double> precond_mat(lhs.rows(), lhs.cols());
-  precond_mat = lhs.sparseView(3e-3, 1);
+  precond_mat = lhs.sparseView(this->dropTols[state.range(0)], 1);
+  precond_mat.makeCompressed();
   const Eigen::IncompleteLUT<double> preconditioner(
       precond_mat, NumTraits<double>::dummy_precision(), 1);
   Eigen::VectorXd x(rhs.rows());
-  int n = lhs.rows();
   for (auto _ : state) {
-    VectorXd x(n);
     double err = tol;
-    Eigen::Index iters = n;
+    Eigen::Index iters = 1000;
     x.setZero();
     Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, err);
   }
@@ -80,6 +60,26 @@ BENCHMARK_F(MyFixture, bench_dense_gmres_ilu)
   state.SetBytesProcessed((ul)state.iterations() *
                           (ul)(lhs.rows() * lhs.cols()) * (ul)16);
 }
+// BENCHMARK_F(MyFixture, bench_dense_gmres_ilu)
+// (benchmark::State &state) {
+//   using SpMat = Eigen::SparseMatrix<double>;
+//   Eigen::SparseMatrix<double> precond_mat(lhs.rows(), lhs.cols());
+//   precond_mat = lhs.sparseView(3e-3, 1);
+//   const Eigen::IncompleteLUT<double> preconditioner(
+//       precond_mat, NumTraits<double>::dummy_precision(), 1);
+//   Eigen::VectorXd x(rhs.rows());
+//   int n = lhs.rows();
+//   for (auto _ : state) {
+//     VectorXd x(n);
+//     double err = tol;
+//     Eigen::Index iters = n;
+//     x.setZero();
+//     Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, err);
+//   }
+//
+//   state.SetBytesProcessed((ul)state.iterations() *
+//                           (ul)(lhs.rows() * lhs.cols()) * (ul)16);
+// }
 //
 // BENCHMARK_F(MyFixture, dense_lu)
 // (benchmark::State &state) {

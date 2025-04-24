@@ -3,8 +3,7 @@
 #include <string>
 #include <vector>
 
-std::vector<AeroResults> run_analysis(const FlowParams &flowParams,
-                                      const ReferenceGeom &refGeom,
-                                      const std::string &inputFile,
-                                      const std::string &outputFile,
-                                      double dropTol, bool rotate_wake);
+std::vector<AeroResults>
+run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
+             const std::string &inputFile, const std::string &outputFile,
+             double dropTol, double spTol, int solver, bool rotate_wake);

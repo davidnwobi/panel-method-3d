@@ -53,7 +53,7 @@ int main() {
 
       // Threshold matrices
       SparseMatrix<double> problemMat = lhs[i].sparseView(sptols[i], 1);
-      SparseMatrix<double> precondMat = problemMat.pruned(dropTol[j]);
+      SparseMatrix<double> precondMat = problemMat.pruned(dropTol[j], 1);
       problemMat.makeCompressed();
       precondMat.makeCompressed();
 

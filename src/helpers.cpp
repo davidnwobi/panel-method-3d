@@ -117,7 +117,7 @@ parse_param(const std::filesystem::path &fpath) {
 
     // First valid numeric line -> aoa, second -> S
     if (!haveaoa) {
-      print("aoa: ", line.c_str());
+      // print("aoa: ", line.c_str());
       flowParams.aoa = std::atof(line.c_str());
       haveaoa = true;
     } else if (!haveS) {

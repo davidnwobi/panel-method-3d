@@ -13,16 +13,33 @@ if (BENCH)
 else()
   add_compile_definitions(BENCHMARKING=0)
 endif()
-set(SLEEF_ENABLE_LTO on)
-set(EIGEN_USE_MKL_ALL on)
 add_compile_definitions(SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 add_compile_definitions(ANALYSIS_DIR="/home/okwuchukwu-nwobi/Projects/PanelMethods/python/out_cpp")
 #add_compile_options(-Werror -Wall -Wextra -pedantic-errors -Wno-conversion -Wno-sign-conversion -Wno-shorten-64-to-32 -Wno-sign-compare -g -O3)
 # add_compile_options(-O3 -mavx512f -march=native -mtune=znver4 -flto=8 -ffast-math -funsafe-math-optimizations -ffunction-sections)
-add_compile_options(-O3 -mavx512f -march=native)
 
+
+include_directories(/usr/local/include/suitesparse/)
 # EXTERNAL PACKAGES 
+
+set (DTYPE "double")
+################ SETTING DATATYPE TO USE:FLOAT, DOUBLE AND COMPLEX #################### FOR HODLR
+if(DTYPE STREQUAL "float")
+    set(DTYPE_FLAG "-DUSE_FLOAT")
+elseif(DTYPE STREQUAL "double")
+    set(DTYPE_FLAG "-DUSE_DOUBLE")
+elseif(DTYPE STREQUAL "complex32")
+    set(DTYPE_FLAG "-DUSE_COMPLEX32")
+elseif(DTYPE STREQUAL "complex64")
+    set(DTYPE_FLAG "-DUSE_COMPLEX64")
+else()
+    message(FATAL_ERROR "Invalid Choice for Datatype. Exiting...")
+endif()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DTYPE_FLAG} ${MKL_FLAGS} --std=c++11 -O3 -funroll-loops -ffast-math -ffinite-math-only -g -lpthread -ldl -march=native -mavx512f")
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+add_subdirectory(HODLR)
+include_directories(HODLR/include)
 #find_package(PCL 1.3 REQUIRED)
 
 # ExternalProject_Add(libsleef
@@ -61,8 +78,9 @@ set_target_properties(
 #link_directories(${PCL_LIBRARY_DIRS})
 #add_definitions(${PCL_DEFINITIONS})
 
-target_include_directories(PanelMethods PUBLIC ${PROJECT_SOURCE_DIR}/include )
-target_link_libraries(PanelMethods PUBLIC Eigen3::Eigen mkl_intel_lp64 mkl_intel_thread mkl_core iomp5)
+target_include_directories(PanelMethods PUBLIC ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/HOLDR/include)
+add_dependencies(PanelMethods hodlr)
+target_link_libraries(PanelMethods PUBLIC Eigen3::Eigen mkl_intel_lp64 mkl_intel_thread mkl_core iomp5 hodlr)
 
 
 add_library(mat_reader ${PROJECT_SOURCE_DIR}/src/mat_reader/mat_reader.cpp) 
@@ -76,7 +94,10 @@ target_link_libraries(mat_reader Eigen3::Eigen)
 # NOTE: Main
 
 add_executable (mainM mainMulti.cpp)
-target_link_libraries(mainM PUBLIC PanelMethods mat_reader)
+target_link_libraries(mainM PUBLIC PanelMethods mat_reader umfpack amd)
+
+add_executable (tutorial_2 tutorial.cpp)
+target_link_libraries(tutorial_2 PUBLIC PanelMethods)
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
@@ -93,7 +114,7 @@ set(BENCHMARK_ENABLE_TESTING OFF)
 
 add_executable(bench_solver bench_solver.cpp)
 # add_dependencies(bench libsleef)
-target_link_libraries(bench_solver PUBLIC benchmark::benchmark PanelMethods mat_reader)
+target_link_libraries(bench_solver PUBLIC benchmark::benchmark PanelMethods mat_reader umfpack amd)
 target_compile_definitions(bench_solver PUBLIC BENCHMARK_STATIC_DEFINE)
 set(BENCHMARK_ENABLE_TESTING OFF)
 

@@ -12,13 +12,15 @@
 #include <vector>
 
 int main(int argc, char *argv[]) {
-  print("Eigne Default Align Bytes", EIGEN_DEFAULT_ALIGN_BYTES);
+  // print("Eigne Default Align Bytes", EIGEN_DEFAULT_ALIGN_BYTES);
   std::string inputFile;
   std::string outputFile;
   std::string paramsFile;
   bool batchAoa = false;
   double dropTol = 1e-6;
+  double spTol = 1e-6;
   bool rotate_wake = false;
+  int solver = 0;
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -34,6 +36,10 @@ int main(int argc, char *argv[]) {
       rotate_wake = true;
     } else if ((arg == "-d") && (i + 1 < argc)) {
       dropTol = std::stod(argv[++i]);
+    } else if ((arg == "-s") && (i + 1 < argc)) {
+      solver = std::stod(argv[++i]);
+    } else if ((arg == "-sp") && (i + 1 < argc)) {
+      spTol = std::stod(argv[++i]);
     }
   }
   // printf("%f", dropTol);
@@ -44,8 +50,8 @@ int main(int argc, char *argv[]) {
   }
   if (!batchAoa) {
     auto [flowParams, refGeom] = parse_param(paramsFile);
-    run_analysis(flowParams, refGeom, inputFile, outputFile, dropTol,
-                 rotate_wake);
+    run_analysis(flowParams, refGeom, inputFile, outputFile, dropTol, spTol,
+                 solver, rotate_wake);
   } else {
     auto [flowParams, refGeom] = parse_param_batch(paramsFile);
     std::ranges::copy(flowParams | views::transform([](const auto &flowParams) {
@@ -55,13 +61,13 @@ int main(int argc, char *argv[]) {
     auto resultsView =
         flowParams | views::transform([&](const auto &flowParams) {
           return run_analysis(flowParams, refGeom, inputFile, outputFile,
-                              dropTol, rotate_wake);
+                              dropTol, spTol, solver, rotate_wake);
         });
     std::vector<std::vector<AeroResults>> results;
     results.reserve(resultsView.size());
     std::ranges::copy(resultsView, std::back_inserter(results));
     accumulateTotalPolars(outputFile, results);
-    print("\n");
+    // print("\n");
   }
 
   return 0;
