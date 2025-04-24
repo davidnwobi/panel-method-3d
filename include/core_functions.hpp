@@ -6,4 +6,4 @@
 std::vector<AeroResults>
 run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
              const std::string &inputFile, const std::string &outputFile,
-             double dropTol, double spTol, int solver, bool rotate_wake);
+             float dropTol, float spTol, int solver, bool rotate_wake);

@@ -11,39 +11,39 @@
 #include <unsupported/Eigen/SparseExtra>
 #include <vector>
 // #define ANALYSIS_DIR
-// "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
+// "D:/PortableDev/projects/panel_methods_3f/python/out_cpp"
 
 #define SAVE_SYSTEM 0
 #define ITER_RES 0
 using namespace Eigen;
 
 struct DenseGMRESILUSolver : ISolver<DenseGMRESILUSolver> {
-  static inline double dropTol = 1e-6;
+  static inline float dropTol = 1e-6;
 
 public:
   DenseGMRESILUSolver() : ISolver<DenseGMRESILUSolver>() {}
-  auto setdropTol(double dropTol_) {
+  auto setdropTol(float dropTol_) {
     dropTol = dropTol_;
     return *this;
   }
   template <typename MatrixType, typename VecType>
-  static Eigen::VectorXd solveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
+  static Eigen::VectorXf solveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
                                    const Eigen::MatrixBase<VecType> &rhs,
-                                   double tol = 1e-6,
+                                   float tol = 1e-6,
                                    std::size_t maxit = 1000) {
     // std::cout << "Creating...\n";
-    using SpMat = Eigen::SparseMatrix<double>;
-    Eigen::SparseMatrix<double> precond_mat(lhs.rows(), lhs.cols());
+    using SpMat = Eigen::SparseMatrix<float>;
+    Eigen::SparseMatrix<float> precond_mat(lhs.rows(), lhs.cols());
     precond_mat = lhs.sparseView(dropTol, 1);
     precond_mat.makeCompressed();
 
-    Eigen::IncompleteLUT<double> preconditioner(
-        precond_mat, NumTraits<double>::dummy_precision(), 1);
+    Eigen::IncompleteLUT<float> preconditioner(
+        precond_mat, NumTraits<float>::dummy_precision(), 1);
     // print("Sparsity: ",
 
     // printf("DropTol: %1.6f\n", dropTol);
     // std::cout << "Solving...\n";
-    Eigen::VectorXd x(rhs.rows());
+    Eigen::VectorXf x(rhs.rows());
     x.setZero();
     Eigen::Index iters = 1000;
     Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, tol);

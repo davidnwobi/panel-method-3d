@@ -15,21 +15,21 @@ TEST(SinglePanelTest, testCenterPointsandNormals) {
   auto panelGeo = PanelGeometry(psets[0].body);
 
   EXPECT_TRUE(
-      panelGeo.centrePoints.row(0).isApprox(Eigen::RowVector3d(0.5, 0.5, 0)))
+      panelGeo.centrePoints.row(0).isApprox(Eigen::RowVector3f(0.5, 0.5, 0)))
       << panelGeo.centrePoints.row(0) << " is not equal to "
-      << (Eigen::RowVector3d(0.5, 0.5, 0));
+      << (Eigen::RowVector3f(0.5, 0.5, 0));
   EXPECT_TRUE(panelGeo.tangentXVectors.row(0).isApprox(
-      Eigen::RowVector3d(1.0, 0.0, 0.0)))
+      Eigen::RowVector3f(1.0, 0.0, 0.0)))
       << panelGeo.tangentXVectors.row(0) << " is not equal to "
-      << (Eigen::RowVector3d(1.0, 0.0, 0.0));
+      << (Eigen::RowVector3f(1.0, 0.0, 0.0));
   EXPECT_TRUE(panelGeo.tangentYVectors.row(0).isApprox(
-      Eigen::RowVector3d(0.0, 1.0, 0.0)))
+      Eigen::RowVector3f(0.0, 1.0, 0.0)))
       << panelGeo.tangentYVectors.row(0) << " is not equal to  "
-      << (Eigen::RowVector3d(0.0, 1.0, 0.0));
+      << (Eigen::RowVector3f(0.0, 1.0, 0.0));
   EXPECT_TRUE(
-      panelGeo.normalVectors.row(0).isApprox(Eigen::RowVector3d(0.0, 0.0, 1.0)))
+      panelGeo.normalVectors.row(0).isApprox(Eigen::RowVector3f(0.0, 0.0, 1.0)))
       << panelGeo.normalVectors.row(0) << " is not equal to "
-      << (Eigen::RowVector3d(0.0, 0.0, 1.0));
+      << (Eigen::RowVector3f(0.0, 0.0, 1.0));
 }
 
 TEST(TestLocalConversion, testLocalConversion) {
@@ -52,7 +52,7 @@ TEST(TestLocalConversion, testLocalConversion) {
               << "\n";
     EXPECT_TRUE(createInfluenceComputeTask(panelGeoSurf, evalPoints, i, idxs)
                     .points.row(i)
-                    .isApprox(Eigen::RowVector3d(0.0, 0.0, 1.0)));
+                    .isApprox(Eigen::RowVector3f(0.0, 0.0, 1.0)));
   }
 }
 

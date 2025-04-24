@@ -1,7 +1,7 @@
 #include "evalPoints.hpp"
 #include <numeric>
 
-EvalPoints<double>
+EvalPoints<float>
 create_eval_points(std::span<const PanelGeometryPair> panelGeometries) {
   auto totalEvalPoints =
       std::accumulate(panelGeometries.begin(), panelGeometries.end(), 0,
@@ -9,7 +9,7 @@ create_eval_points(std::span<const PanelGeometryPair> panelGeometries) {
                         return count + panelGeo.first.centrePoints.rows();
                       });
 
-  EvalPoints<double> evalPoints(totalEvalPoints);
+  EvalPoints<float> evalPoints(totalEvalPoints);
   std::size_t iPoints = 0;
   auto pointsView = panelGeometries | std::views::transform([](auto const &g) {
                       return g.first.centrePoints;

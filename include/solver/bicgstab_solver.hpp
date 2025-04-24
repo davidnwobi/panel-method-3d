@@ -7,16 +7,16 @@
 #include <iostream>
 #include <vector>
 // #define ANALYSIS_DIR
-// "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
+// "D:/PortableDev/projects/panel_methods_3f/python/out_cpp"
 
 struct BICGSTABSolver : ISolver {
-  Eigen::VectorXd solve(const Eigen::MatrixXd &lhs,
-                        const Eigen::VectorXd &rhs, double tol=1e-6, std::size_t maxit = 10) override {
-    double lim = 1e-6;
+  Eigen::VectorXf solve(const Eigen::MatrixXf &lhs,
+                        const Eigen::VectorXf &rhs, float tol=1e-6, std::size_t maxit = 10) override {
+    float lim = 1e-6;
     std::cout << "Creating...\n";
 
-    typedef Eigen::SparseMatrix<double> SpMat;
-    typedef Eigen::Triplet<double> T;
+    typedef Eigen::SparseMatrix<float> SpMat;
+    typedef Eigen::Triplet<float> T;
 
     std::vector<T> tripletList;
     tripletList.reserve(lhs.rows() * lhs.cols());
@@ -31,7 +31,7 @@ struct BICGSTABSolver : ISolver {
     SpMat A(lhs.rows(), lhs.cols());
     A.setFromTriplets(tripletList.begin(), tripletList.end());
     Eigen::BiCGSTAB<SpMat> solver(A);
-    Eigen::VectorXd x = rhs;
+    Eigen::VectorXf x = rhs;
     std::cout << "Solving...\n";
     x = solver.solve(rhs);
     std::cout << "#iterations:     " << solver.iterations() << std::endl;

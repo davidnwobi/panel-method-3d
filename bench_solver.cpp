@@ -1,4 +1,4 @@
-#define EIGEN_USE_MKL_ALL
+// #define EIGEN_USE_MKL_ALL
 #include "solver/dense_gmres_solver.hpp"
 #include "solver/dense_gmres_solver_ilu.hpp"
 #include "solver/dense_solver.hpp"
@@ -17,28 +17,28 @@
 #include <cstdlib>
 #include <unsupported/Eigen/SparseExtra>
 
-#define I 3
-static const double MULTIPLIER = 10;
+#define I 0
+static const float MULTIPLIER = 10;
 using ul = long long;
 class MyFixture : public benchmark::Fixture {
 public:
-  Eigen::MatrixXd lhs;
-  Eigen::VectorXd rhs;
-  double maxit = 1000;
-  double dropTol = 1e-4;
-  double spTol = 1e-4;
-  double tol = 1e-6;
-  // const std::array<double, 7> dropTols = {1e-1, 3e-2, 1e-2, 3e-3,
+  Eigen::MatrixXf lhs;
+  Eigen::VectorXf rhs;
+  float maxit = 1000;
+  float dropTol = 1e-4;
+  float spTol = 1e-4;
+  float tol = 1e-6;
+  // const std::array<float, 7> dropTols = {1e-1, 3e-2, 1e-2, 3e-3,
   //                                         1e-3, 3e-4, 1e-4};
   void SetUp(::benchmark::State &state) {
-    double dpTols[] = {1e-2, 1e-2, 3e-3, 1e-3, 3e-3};
-    double spTols[] = {1e-5, 1e-5, 1e-6, 3.125e-6, 1e-5};
+    float dpTols[] = {1e-2, 1e-2, 3e-3, 1e-3, 3e-3};
+    float spTols[] = {1e-5, 1e-5, 1e-6, 3.125e-6, 1e-5};
     std::string mats[] = {"c1", "c2", "c3", "swept_wing", "canardTest"};
     spTol = spTols[I];
     dropTol = dpTols[I];
     // dropTol << 1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4;
     const std::string base = "../../";
-    Eigen::SparseMatrix<double> spmat;
+    Eigen::SparseMatrix<float> spmat;
     Eigen::loadMarketDense(lhs, base + mats[I] + "/lhs.txt");
     Eigen::loadMarketDense(rhs, base + mats[I] + "/rhs.txt");
   }
@@ -51,7 +51,7 @@ public:
 BENCHMARK_F(MyFixture, dense_solver)
 (benchmark::State &state) {
 
-  Eigen::VectorXd x;
+  Eigen::VectorXf x;
   for (auto _ : state) {
 
     DenseSolver solver;

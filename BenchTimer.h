@@ -58,7 +58,7 @@ public:
 #if defined(_WIN32) || defined(__CYGWIN__)
     LARGE_INTEGER freq;
     QueryPerformanceFrequency(&freq);
-    m_frequency = (double)freq.QuadPart;
+    m_frequency = (float)freq.QuadPart;
 #endif
     reset();
   }
@@ -91,57 +91,57 @@ public:
 
   /** Return the elapsed time in seconds between the last start/stop pair
    */
-  inline double value(int TIMER = CPU_TIMER) const { return m_times[TIMER]; }
+  inline float value(int TIMER = CPU_TIMER) const { return m_times[TIMER]; }
 
   /** Return the best elapsed time in seconds
    */
-  inline double best(int TIMER = CPU_TIMER) const { return m_bests[TIMER]; }
+  inline float best(int TIMER = CPU_TIMER) const { return m_bests[TIMER]; }
 
   /** Return the worst elapsed time in seconds
    */
-  inline double worst(int TIMER = CPU_TIMER) const { return m_worsts[TIMER]; }
+  inline float worst(int TIMER = CPU_TIMER) const { return m_worsts[TIMER]; }
 
   /** Return the total elapsed time in seconds.
    */
-  inline double total(int TIMER = CPU_TIMER) const { return m_totals[TIMER]; }
+  inline float total(int TIMER = CPU_TIMER) const { return m_totals[TIMER]; }
 
-  inline double getCpuTime() const {
+  inline float getCpuTime() const {
 #ifdef _WIN32
     LARGE_INTEGER query_ticks;
     QueryPerformanceCounter(&query_ticks);
     return query_ticks.QuadPart / m_frequency;
 #elif __APPLE__
-    return double(mach_absolute_time()) * 1e-9;
+    return float(mach_absolute_time()) * 1e-9;
 #else
     timespec ts;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
-    return double(ts.tv_sec) + 1e-9 * double(ts.tv_nsec);
+    return float(ts.tv_sec) + 1e-9 * float(ts.tv_nsec);
 #endif
   }
 
-  inline double getRealTime() const {
+  inline float getRealTime() const {
 #ifdef _WIN32
     SYSTEMTIME st;
     GetSystemTime(&st);
-    return (double)st.wSecond + 1.e-3 * (double)st.wMilliseconds;
+    return (float)st.wSecond + 1.e-3 * (float)st.wMilliseconds;
 #elif __APPLE__
-    return double(mach_absolute_time()) * 1e-9;
+    return float(mach_absolute_time()) * 1e-9;
 #else
     timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
-    return double(ts.tv_sec) + 1e-9 * double(ts.tv_nsec);
+    return float(ts.tv_sec) + 1e-9 * float(ts.tv_nsec);
 #endif
   }
 
 protected:
 #if defined(_WIN32) || defined(__CYGWIN__)
-  double m_frequency;
+  float m_frequency;
 #endif
-  Vector2d m_starts;
-  Vector2d m_times;
-  Vector2d m_bests;
-  Vector2d m_worsts;
-  Vector2d m_totals;
+  Vector2f m_starts;
+  Vector2f m_times;
+  Vector2f m_bests;
+  Vector2f m_worsts;
+  Vector2f m_totals;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

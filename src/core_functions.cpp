@@ -29,9 +29,9 @@
 std::vector<AeroResults>
 run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
              const std::string &inputFile, const std::string &outputFile,
-             double dropTol, double spTol, int solverType, bool rotate_wake) {
+             float dropTol, float spTol, int solverType, bool rotate_wake) {
 
-  Eigen::Array3d freeStream = getFreeStream(flowParams.aoa, 1);
+  Eigen::Array3f freeStream = getFreeStream(flowParams.aoa, 1);
   auto pset = readConvertedComponentsFromFile(inputFile);
   if (rotate_wake) {
     // print("Aligning Wake\n");
@@ -44,7 +44,7 @@ run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   auto evalPoints = create_eval_points(panelGeometries);
   auto [lhs, rhs, sourceStrength] =
       assembleLhs(panelGeometries, evalPoints, freeStream);
-  Eigen::ArrayXd doubletStrength(rhs.rows());
+  Eigen::ArrayXf doubletStrength(rhs.rows());
   // print("Solver Type ", solverType);
   switch (solverType) {
   case 0: {
@@ -97,7 +97,7 @@ run_analysis(const FlowParams &flowParams, const ReferenceGeom &refGeom,
   auto results = postProcessBody(panelGeometries, doubletStrength,
                                  sourceStrength, flowParams, refGeom);
 
-  double sum = 0;
+  float sum = 0;
   for (auto i : RANGE(results.size())) {
     std::string outfile = outputFile + "/bodydata_S" + std::to_string(i) +
                           "_aoa" + std::to_string((int)flowParams.aoa) + ".dat";

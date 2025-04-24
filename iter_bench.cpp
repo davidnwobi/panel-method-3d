@@ -14,15 +14,15 @@ int main() {
   // Parameters
   const int numTests = 1; // ILU(0), ILUT
   const int numMats = 5;
-  const double tol = 1e-6;
+  const float tol = 1e-6;
   std::array<std::string, numMats> mats = {"c1", "c2", "c3", "swept_wing",
                                            "canardTest"};
-  Eigen::ArrayXd sptols(5);
+  Eigen::ArrayXf sptols(5);
   sptols << 5e-5, 1e-5, 1e-6, 3.125e-6, 1e-5;
-  Eigen::ArrayXd dropTol(7);
+  Eigen::ArrayXf dropTol(7);
   dropTol << 1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4;
-  std::vector<Eigen::MatrixXd> lhs(numMats);
-  std::vector<Eigen::VectorXd> rhs(numMats);
+  std::vector<Eigen::MatrixXf> lhs(numMats);
+  std::vector<Eigen::VectorXf> rhs(numMats);
   std::vector<bool> read(numMats);
   const string baseDir = "../../";
 
@@ -30,7 +30,7 @@ int main() {
   for (size_t j = 0; j < dropTol.size(); ++j) {
     // Results containers
     Eigen::ArrayXXi iters(mats.size(), numTests);
-    Eigen::ArrayXXd errs(mats.size(), numTests);
+    Eigen::ArrayXXf errs(mats.size(), numTests);
 
     for (size_t i = 0; i < mats.size(); ++i) {
       // Paths for matrices
@@ -52,29 +52,29 @@ int main() {
       int n = lhs[i].rows();
 
       // Threshold matrices
-      SparseMatrix<double> problemMat = lhs[i].sparseView(sptols[i], 1);
-      SparseMatrix<double> precondMat = problemMat.pruned(dropTol[j], 1);
+      SparseMatrix<float> problemMat = lhs[i].sparseView(sptols[i], 1);
+      SparseMatrix<float> precondMat = problemMat.pruned(dropTol[j], 1);
       problemMat.makeCompressed();
       precondMat.makeCompressed();
 
       cout << "Matrix " << mats[i] << " | dropTol=" << dropTol[j]
-           << " | precond sparsity=" << double(precondMat.nonZeros()) / (n * n)
-           << " | problem sparsity=" << double(problemMat.nonZeros()) / (n * n)
+           << " | precond sparsity=" << float(precondMat.nonZeros()) / (n * n)
+           << " | problem sparsity=" << float(problemMat.nonZeros()) / (n * n)
            << endl;
 
       // Build preconditioners outside solver
-      IncompleteLUT<double> ilu0;
+      IncompleteLUT<float> ilu0;
       ilu0.setDroptol(dropTol[j]);
       ilu0.setFillfactor(1);
       ilu0.compute(precondMat);
 
       // Test 1: ILU(0) preconditioner on 'precondMat', solve 'problemMat'
       {
-        GMRES<SparseMatrix<double>, IncompleteLUT<double>> solver;
-        Eigen::VectorXd x(n);
+        GMRES<SparseMatrix<float>, IncompleteLUT<float>> solver;
+        Eigen::VectorXf x(n);
         x.setZero();
         Eigen::Index its = n;
-        double error = tol;
+        float error = tol;
         Eigen::internal::gmres(problemMat, rhs[i], x, ilu0, its, 200, error);
         iters(i, 0) = its;
         errs(i, 0) = error;

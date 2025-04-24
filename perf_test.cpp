@@ -56,8 +56,8 @@ template <typename Callable> long long count_instructions(Callable func) {
 
 int main(int argc, char **argv) {
   using namespace Eigen;
-  MatrixXd lhs;
-  MatrixXd rhs;
+  MatrixXf lhs;
+  MatrixXf rhs;
   std::string base = "../../c3/";
 
   if (!loadMarketDense(lhs, base + "lhs.txt")) {
@@ -68,19 +68,19 @@ int main(int argc, char **argv) {
     std::cerr << "Error reading b from " << base + "rhs.txt" << std::endl;
   }
 
-  SparseMatrix<double> precondMat = lhs.sparseView(3e-3, 1);
+  SparseMatrix<float> precondMat = lhs.sparseView(3e-3, 1);
   printf("%ld, \n", precondMat.nonZeros());
-  IncompleteLUT<double> ilu0;
+  IncompleteLUT<float> ilu0;
   ilu0.setFillfactor(1);
   ilu0.compute(precondMat);
 
   int n = lhs.rows();
   auto gmres_bench = [&lhs, &rhs, &ilu0, n] {
     for (int i = 0; i < 50; i++) {
-      VectorXd x(n);
+      VectorXf x(n);
       x.setZero();
       Index its = n;
-      double error = 1e-6;
+      float error = 1e-6;
       internal::gmres(lhs, rhs, x, ilu0, its, 200, error);
       printf("Its: %ld\n", its);
     }

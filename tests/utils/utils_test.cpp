@@ -50,8 +50,8 @@ TEST(AccumulateMoveTest, HandlesVectorToString) {
     }
 }
 
-TEST(AccumulateMoveTest, HandlesVectorOfEigenArrayXXd) {
-    using EigenArray = Eigen::ArrayXXd;
+TEST(AccumulateMoveTest, HandlesVectorOfEigenArrayXXf) {
+    using EigenArray = Eigen::ArrayXXf;
 
     // Initialize some Eigen arrays with the same number of rows but different columns
     EigenArray mat1 = EigenArray::Constant(2, 3, 1.0); // 2 rows, 3 cols, filled with 1.0

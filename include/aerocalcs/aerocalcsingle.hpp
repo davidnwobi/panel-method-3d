@@ -5,19 +5,19 @@
 #include <unordered_map>
 
 struct FlowParams {
-  double aoa;
-  double rho;
-  double Vinf;
+  float aoa;
+  float rho;
+  float Vinf;
 };
 struct ReferenceGeom {
-  double refArea;
+  float refArea;
 };
 struct AeroResults {
   PanelSet pSet;
 
-  using AeroPanelResults = std::unordered_map<std::string, Eigen::ArrayXd>;
-  using AeroSpanResults = std::unordered_map<std::string, Eigen::ArrayXd>;
-  using AeroPolars = std::unordered_map<std::string, double>;
+  using AeroPanelResults = std::unordered_map<std::string, Eigen::ArrayXf>;
+  using AeroSpanResults = std::unordered_map<std::string, Eigen::ArrayXf>;
+  using AeroPolars = std::unordered_map<std::string, float>;
 
   ReferenceGeom refGeom;
   AeroPanelResults panelResults;

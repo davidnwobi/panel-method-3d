@@ -17,8 +17,8 @@ int main(int argc, char *argv[]) {
   std::string outputFile;
   std::string paramsFile;
   bool batchAoa = false;
-  double dropTol = 1e-6;
-  double spTol = 1e-6;
+  float dropTol = 1e-6;
+  float spTol = 1e-6;
   bool rotate_wake = false;
   int solver = 0;
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     std::ranges::copy(flowParams | views::transform([](const auto &flowParams) {
                         return flowParams.aoa;
                       }),
-                      std::ostream_iterator<double>(std::cout, " "));
+                      std::ostream_iterator<float>(std::cout, " "));
     auto resultsView =
         flowParams | views::transform([&](const auto &flowParams) {
           return run_analysis(flowParams, refGeom, inputFile, outputFile,

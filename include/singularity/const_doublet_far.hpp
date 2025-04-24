@@ -5,8 +5,8 @@
 #include <Eigen/Core>
 #include <numbers>
 
-struct DoubletFar : IConstant3dSingularity<DoubletFar> {
+struct DoubletFar : IConstant3fSingularity<DoubletFar> {
 
-  static Eigen::ArrayXd calcInfluenceImpl(const ComputeTask &compTask); 
-  static double calcSelfInfluenceImpl(const ComputeTask &compTask);
+  static Eigen::ArrayXf calcInfluenceImpl(const ComputeTask &compTask); 
+  static float calcSelfInfluenceImpl(const ComputeTask &compTask);
 };

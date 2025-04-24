@@ -7,7 +7,7 @@ template <typename MatrixType> class EigenKernel : public HODLR_Matrix {
 
 public:
   explicit EigenKernel(const MatrixType &A) : HODLR_Matrix(A.rows()), A_(A) {}
-  double getMatrixEntry(int i, int j) override { return A_(i, j); }
+  float getMatrixEntry(int i, int j) override { return A_(i, j); }
 
   Eigen::Index rows() { return A_.rows(); }
   const Eigen::Index rows() const { return A_.rows(); }
@@ -23,7 +23,7 @@ template <typename MatrixType> class HodlrWrapper {
   bool assembled;
 
 public:
-  explicit HodlrWrapper(const MatrixType &A, int leaf, double tol)
+  explicit HodlrWrapper(const MatrixType &A, int leaf, float tol)
       : K(A), T(A.rows(), leaf, tol) {
 
     T.assemble(&K, "rookPivoting", 0, 0);
@@ -50,10 +50,10 @@ public:
   HODLR &hodlr() { return T; }
   hodlr_solver_internal::EigenKernel<MatrixType> &kernel() { return K; }
 };
-// explicit HodlrWrapper(const MatrixType &A, int leaf, double tol)
+// explicit HodlrWrapper(const MatrixType &A, int leaf, float tol)
 //     : K(A), T(A.rows(), leaf, tol) {}
-// Eigen::VectorXd operator*(const Eigen::VectorXd &rhs) const {
-//   using Derived = Eigen::VectorXd;
+// Eigen::VectorXf operator*(const Eigen::VectorXf &rhs) const {
+//   using Derived = Eigen::VectorXf;
 //   if constexpr (Eigen::MatrixBase<Derived>::ColsAtCompileTime == 1) {
 //     printf("\n 1, Rows %ld, Cols, %ld, rhs Rows: %ld\n", rows(), cols(),
 //            rhs.rows());

@@ -16,24 +16,24 @@
 #include <unsupported/Eigen/SparseExtra>
 
 #define I 2
-static const double MULTIPLIER = 10;
+static const float MULTIPLIER = 10;
 using ul = long long;
 class MyFixture : public benchmark::Fixture {
 public:
-  Eigen::MatrixXd lhs;
-  Eigen::VectorXd rhs;
-  double tol = 1e-6;
-  double maxit = 1000;
-  double spTol = 1e-6;
-  const std::array<double, 7> dropTols = {1e-1, 3e-2, 1e-2, 3e-3,
+  Eigen::MatrixXf lhs;
+  Eigen::VectorXf rhs;
+  float tol = 1e-6;
+  float maxit = 1000;
+  float spTol = 1e-6;
+  const std::array<float, 7> dropTols = {1e-1, 3e-2, 1e-2, 3e-3,
                                           1e-3, 3e-4, 1e-4};
   void SetUp(::benchmark::State &state) {
-    double spTols[] = {5e-5, 1e-5, 1e-6, 3.125e-6, 1e-5};
+    float spTols[] = {5e-5, 1e-5, 1e-6, 3.125e-6, 1e-5};
     std::string mats[] = {"c1", "c2", "c3", "swept_wing", "canardTest"};
     spTol = spTols[I];
     // dropTol << 1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4;
     const std::string base = "../../";
-    Eigen::SparseMatrix<double> spmat;
+    Eigen::SparseMatrix<float> spmat;
     Eigen::loadMarketDense(lhs, base + mats[I] + "/lhs.txt");
     Eigen::loadMarketDense(rhs, base + mats[I] + "/rhs.txt");
   }
@@ -43,15 +43,15 @@ public:
 
 BENCHMARK_DEFINE_F(MyFixture, bench_dense_gmres_ilu)
 (benchmark::State &state) {
-  using SpMat = Eigen::SparseMatrix<double>;
-  Eigen::SparseMatrix<double> precond_mat(lhs.rows(), lhs.cols());
+  using SpMat = Eigen::SparseMatrix<float>;
+  Eigen::SparseMatrix<float> precond_mat(lhs.rows(), lhs.cols());
   precond_mat = lhs.sparseView(this->dropTols[state.range(0)], 1);
   precond_mat.makeCompressed();
-  const Eigen::IncompleteLUT<double> preconditioner(
-      precond_mat, NumTraits<double>::dummy_precision(), 1);
-  Eigen::VectorXd x(rhs.rows());
+  const Eigen::IncompleteLUT<float> preconditioner(
+      precond_mat, NumTraits<float>::dummy_precision(), 1);
+  Eigen::VectorXf x(rhs.rows());
   for (auto _ : state) {
-    double err = tol;
+    float err = tol;
     Eigen::Index iters = 1000;
     x.setZero();
     Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, err);
@@ -62,16 +62,16 @@ BENCHMARK_DEFINE_F(MyFixture, bench_dense_gmres_ilu)
 }
 // BENCHMARK_F(MyFixture, bench_dense_gmres_ilu)
 // (benchmark::State &state) {
-//   using SpMat = Eigen::SparseMatrix<double>;
-//   Eigen::SparseMatrix<double> precond_mat(lhs.rows(), lhs.cols());
+//   using SpMat = Eigen::SparseMatrix<float>;
+//   Eigen::SparseMatrix<float> precond_mat(lhs.rows(), lhs.cols());
 //   precond_mat = lhs.sparseView(3e-3, 1);
-//   const Eigen::IncompleteLUT<double> preconditioner(
-//       precond_mat, NumTraits<double>::dummy_precision(), 1);
-//   Eigen::VectorXd x(rhs.rows());
+//   const Eigen::IncompleteLUT<float> preconditioner(
+//       precond_mat, NumTraits<float>::dummy_precision(), 1);
+//   Eigen::VectorXf x(rhs.rows());
 //   int n = lhs.rows();
 //   for (auto _ : state) {
-//     VectorXd x(n);
-//     double err = tol;
+//     VectorXf x(n);
+//     float err = tol;
 //     Eigen::Index iters = n;
 //     x.setZero();
 //     Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, err);
@@ -84,7 +84,7 @@ BENCHMARK_DEFINE_F(MyFixture, bench_dense_gmres_ilu)
 // BENCHMARK_F(MyFixture, dense_lu)
 // (benchmark::State &state) {
 //
-//   Eigen::VectorXd x;
+//   Eigen::VectorXf x;
 //   for (auto _ : state) {
 //     x = lhs.lu().solve(rhs);
 //   }

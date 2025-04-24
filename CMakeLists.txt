@@ -1,6 +1,6 @@
-﻿# CMakeList.txt : CMake project for Inviscid3d, include source and define
+﻿# CMakeList.txt : CMake project for Inviscid3f, include source and define
 cmake_minimum_required(VERSION 3.21)
-project(Inviscid3d VERSION 0.6 LANGUAGES C CXX)  
+project(Inviscid3f VERSION 0.6 LANGUAGES C CXX)  
 include(ExternalProject)
 
 set (CMAKE_CXX_STANDARD 23)
@@ -22,11 +22,11 @@ add_compile_definitions(ANALYSIS_DIR="/home/okwuchukwu-nwobi/Projects/PanelMetho
 include_directories(/usr/local/include/suitesparse/)
 # EXTERNAL PACKAGES 
 
-set (DTYPE "double")
+set (DTYPE "float")
 ################ SETTING DATATYPE TO USE:FLOAT, DOUBLE AND COMPLEX #################### FOR HODLR
 if(DTYPE STREQUAL "float")
     set(DTYPE_FLAG "-DUSE_FLOAT")
-elseif(DTYPE STREQUAL "double")
+elseif(DTYPE STREQUAL "float")
     set(DTYPE_FLAG "-DUSE_DOUBLE")
 elseif(DTYPE STREQUAL "complex32")
     set(DTYPE_FLAG "-DUSE_COMPLEX32")

@@ -3,9 +3,9 @@
 #include <hodlr_eigK.hpp>
 
 template <typename MatrixType, typename VecType>
-Eigen::VectorXd hodlrSolveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
+Eigen::VectorXf hodlrSolveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
                                const Eigen::MatrixBase<VecType> &rhs,
-                               double tol) {
+                               float tol) {
   const int leaf = 128;
 
   // ------------------------------------------------------------------
@@ -26,9 +26,9 @@ Eigen::VectorXd hodlrSolveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
 struct HODLRSolver {
 
   template <typename MatrixType, typename VecType>
-  Eigen::VectorXd solve(const Eigen::MatrixBase<MatrixType> &lhs,
+  Eigen::VectorXf solve(const Eigen::MatrixBase<MatrixType> &lhs,
                         const Eigen::MatrixBase<VecType> &rhs,
-                        double tol = 1e-6) {
+                        float tol = 1e-6) {
     return hodlrSolveImpl(lhs, rhs, tol);
   }
 };

@@ -8,25 +8,25 @@
 #include <iostream>
 #include <vector>
 // #define ANALYSIS_DIR
-// "D:/PortableDev/projects/panel_methods_3d/python/out_cpp"
+// "D:/PortableDev/projects/panel_methods_3f/python/out_cpp"
 struct SparseSolver : ISolver<SparseSolver> {
 
-  inline static double spTol = 1e-6;
+  inline static float spTol = 1e-6;
 
 public:
   SparseSolver() : ISolver<SparseSolver>() {}
-  auto setspTol(double spTol_) {
+  auto setspTol(float spTol_) {
     spTol = spTol_;
     return *this;
   }
   template <typename MatrixType, typename VecType>
-  static Eigen::VectorXd solveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
+  static Eigen::VectorXf solveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
                                    const Eigen::MatrixBase<VecType> &rhs,
-                                   double tol = 1e-6, std::size_t maxit = 10) {
+                                   float tol = 1e-6, std::size_t maxit = 10) {
     // FileReaderFactory::make_file_reader("dat", " ",
     // true)->save_data(std::string(ANALYSIS_DIR) + "/infMat.dat", lhs);
-    typedef Eigen::SparseMatrix<double> SpMat;
-    typedef Eigen::Triplet<double> T;
+    typedef Eigen::SparseMatrix<float> SpMat;
+    typedef Eigen::Triplet<float> T;
 
     SpMat A(lhs.rows(), lhs.cols());
     A = lhs.sparseView(spTol, 1);

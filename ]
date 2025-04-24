@@ -28,9 +28,9 @@ int main() {
   PanelGeometry<SurfacePanel> body(pset.body);
   PanelGeometry<SurfacePanel> wake(pset.wake);
 
-  EvalPoints<double> evalPoints(body.centrePoints);
+  EvalPoints<float> evalPoints(body.centrePoints);
   //  auto getPanelDiagonalLength =
-  //      []<typename PanelGeo>(const PanelGeo &panelGeo) -> Eigen::ArrayXd {
+  //      []<typename PanelGeo>(const PanelGeo &panelGeo) -> Eigen::ArrayXf {
   //    const auto &faceIdx = panelGeo.mSurface.mFaceNodeIdx;
   //    const auto &surfPoints = panelGeo.mSurface.mPoints;
   //
@@ -60,7 +60,7 @@ int main() {
                       std::make_unique<SparseSolver>());
 
   calc.run({10, 1, 1});
-  // Eigen::ArrayX2d polars(n, 2);
+  // Eigen::ArrayX2f polars(n, 2);
   // polars.setZero();
   // for (const auto i : std::ranges::views::iota(18, n)) {
   //   calc.run({i * 0.5, 1, 1});
