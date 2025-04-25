@@ -19,6 +19,8 @@ using namespace Eigen;
 
 struct DenseGMRESILUSolver : ISolver<DenseGMRESILUSolver> {
   static inline float dropTol = 1e-6;
+  inline static Eigen::Index iters = 1000;
+  inline static float errs = 1e-6;
 
 public:
   DenseGMRESILUSolver() : ISolver<DenseGMRESILUSolver>() {}
@@ -29,8 +31,7 @@ public:
   template <typename MatrixType, typename VecType>
   static Eigen::VectorXf solveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
                                    const Eigen::MatrixBase<VecType> &rhs,
-                                   float tol = 1e-6,
-                                   std::size_t maxit = 1000) {
+                                   float tol = 1e-6, std::size_t maxit = 1000) {
     // std::cout << "Creating...\n";
     using SpMat = Eigen::SparseMatrix<float>;
     Eigen::SparseMatrix<float> precond_mat(lhs.rows(), lhs.cols());
@@ -38,15 +39,19 @@ public:
     precond_mat.makeCompressed();
 
     Eigen::IncompleteLUT<float> preconditioner(
-        precond_mat, NumTraits<float>::dummy_precision(), 1);
+        precond_mat, Eigen::NumTraits<float>::dummy_precision(), 1);
+    preconditioner.setDroptol(dropTol);
+    // Eigen::IncompleteLUT<float> preconditioner(
+    //     precond_mat, NumTraits<float>::dummy_precision(), 1);
     // print("Sparsity: ",
 
     // printf("DropTol: %1.6f\n", dropTol);
     // std::cout << "Solving...\n";
     Eigen::VectorXf x(rhs.rows());
     x.setZero();
-    Eigen::Index iters = 1000;
-    Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, tol);
+    iters = maxit;
+    errs = tol;
+    Eigen::internal::gmres(lhs, rhs, x, preconditioner, iters, maxit, errs);
     // std::cout << "#iterations:     " << iters << std::endl;
     // std::cout << "estimated error: " << tol << std::endl;
 

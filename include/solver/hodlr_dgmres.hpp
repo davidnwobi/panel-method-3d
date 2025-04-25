@@ -21,6 +21,8 @@ struct HodlrDgmres : ISolver<HodlrDgmres> {
 
   inline static float dropTol = 1e-6;
   inline static float spTol = 1e-6;
+  inline static Eigen::Index iters = 1000;
+  inline static float errs = 1e-6;
 
 public:
   auto setdropTol(float dropTol_) {
@@ -35,8 +37,7 @@ public:
   template <typename MatrixType, typename VecType>
   static Eigen::VectorXf solveImpl(const Eigen::MatrixBase<MatrixType> &lhs,
                                    const Eigen::MatrixBase<VecType> &rhs,
-                                   float tol = 1e-6,
-                                   std::size_t maxit = 1000) {
+                                   float tol = 1e-6, std::size_t maxit = 1000) {
     // std::cout << "Creating...\n";
     using SpMat = Eigen::SparseMatrix<float>;
     // Eigen::SparseMatrix<float> precond_mat(lhs.rows(), lhs.cols());
@@ -48,17 +49,19 @@ public:
 
     Eigen::IncompleteLUT<float> preconditioner(
         precond_mat, NumTraits<float>::dummy_precision(), 1);
+
+    preconditioner.setDroptol(dropTol);
     // print("Sparsity: ",
 
     HodlrWrapper hodlr_wrapper(lhs, 128, spTol);
     hodlr_wrapper.factorize();
-    hodlr_wrapper.hodlr().plotTree("c3_rank_matrix.txt");
+    // hodlr_wrapper.hodlr().plotTree("c3_rank_matrix.txt");
     // printf("DropTol: %1.6f\n", dropTol);
     // std::cout << "Solving...\n";
     Eigen::VectorXf x(rhs.rows());
     x.setZero();
-    Eigen::Index iters = 1000;
-    float errs = tol;
+    iters = 1000;
+    errs = tol;
     Eigen::internal::gmres(hodlr_wrapper, rhs, x, preconditioner, iters, maxit,
                            errs);
     // std::cout << "#iterations:     " << iters << std::endl;

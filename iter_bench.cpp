@@ -1,3 +1,4 @@
+#include "solver/gmres_solver_ilu.hpp"
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Sparse>
 #include <array>
@@ -18,7 +19,9 @@ int main() {
   std::array<std::string, numMats> mats = {"c1", "c2", "c3", "swept_wing",
                                            "canardTest"};
   Eigen::ArrayXf sptols(5);
-  sptols << 5e-5, 1e-5, 1e-6, 3.125e-6, 1e-5;
+
+  // float dpTols[] = {1e-2, 1e-2, 3e-3, 1e-3, 3e-3};
+  sptols << 1e-5, 1e-5, 1e-6, 3.125e-6, 1e-5;
   Eigen::ArrayXf dropTol(7);
   dropTol << 1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4;
   std::vector<Eigen::MatrixXf> lhs(numMats);
@@ -63,21 +66,17 @@ int main() {
            << endl;
 
       // Build preconditioners outside solver
-      IncompleteLUT<float> ilu0;
-      ilu0.setDroptol(dropTol[j]);
-      ilu0.setFillfactor(1);
-      ilu0.compute(precondMat);
+      const Eigen::IncompleteLUT<float> ilu0(
+          precondMat, Eigen::NumTraits<float>::dummy_precision(), 1);
 
       // Test 1: ILU(0) preconditioner on 'precondMat', solve 'problemMat'
       {
-        GMRES<SparseMatrix<float>, IncompleteLUT<float>> solver;
-        Eigen::VectorXf x(n);
-        x.setZero();
-        Eigen::Index its = n;
-        float error = tol;
-        Eigen::internal::gmres(problemMat, rhs[i], x, ilu0, its, 200, error);
-        iters(i, 0) = its;
-        errs(i, 0) = error;
+        GMRESILUSolver solver;
+        solver.setspTol(sptols[i]);
+        solver.setdropTol(dropTol[j]);
+        solver.solve(lhs[i], rhs[i], tol, 1000);
+        iters(i, 0) = solver.iters;
+        errs(i, 0) = solver.errs;
       }
     }
 

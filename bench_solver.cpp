@@ -17,7 +17,7 @@
 #include <cstdlib>
 #include <unsupported/Eigen/SparseExtra>
 
-#define I 0
+#define I 2
 static const float MULTIPLIER = 10;
 using ul = long long;
 class MyFixture : public benchmark::Fixture {
@@ -92,41 +92,67 @@ BENCHMARK_F(MyFixture, hodlr_dmgres)(benchmark::State &st) {
 #endif
 
 #ifndef EIGEN_USE_MKL_ALL
-BENCHMARK_F(MyFixture, dense_gmres)(benchmark::State &st) {
-  for (auto _ : st) {
-    DenseGMRESSolver solver;
-    solver.solve(this->lhs, this->rhs, this->tol);
-  }
-  st.SetBytesProcessed((ul)st.iterations() * (ul)(lhs.rows() * lhs.cols()) *
-                       (ul)16);
-}
+// BENCHMARK_F(MyFixture, dense_gmres)(benchmark::State &st) {
+//   for (auto _ : st) {
+//     DenseGMRESSolver solver;
+//     solver.solve(this->lhs, this->rhs, this->tol);
+//   }
+//   st.SetBytesProcessed((ul)st.iterations() * (ul)(lhs.rows() * lhs.cols()) *
+//                        (ul)16);
+// }
 
 BENCHMARK_F(MyFixture, dense_gmres_ilu)(benchmark::State &st) {
+  Eigen::Index iters;
+  double errs;
   for (auto _ : st) {
     DenseGMRESILUSolver solver;
     solver.setdropTol(this->dropTol);
     solver.solve(this->lhs, this->rhs, this->tol);
+    iters = solver.iters;
+    errs = solver.errs;
   }
+
+  print("Solver Iters: ", iters, " Solver Errs: ", errs);
   st.SetBytesProcessed((ul)st.iterations() * (ul)(lhs.rows() * lhs.cols()) *
                        (ul)16);
 }
 
-BENCHMARK_F(MyFixture, gmres)(benchmark::State &st) {
-  for (auto _ : st) {
-    GMRESSolver solver;
-    solver.setspTol(this->spTol);
-    solver.solve(this->lhs, this->rhs, this->tol);
-  }
-  st.SetBytesProcessed((ul)st.iterations() * (ul)(lhs.rows() * lhs.cols()) *
-                       (ul)16);
-}
+// BENCHMARK_F(MyFixture, gmres)(benchmark::State &st) {
+//   for (auto _ : st) {
+//     GMRESSolver solver;
+//     solver.setspTol(this->spTol);
+//     solver.solve(this->lhs, this->rhs, this->tol);
+//   }
+//   st.SetBytesProcessed((ul)st.iterations() * (ul)(lhs.rows() * lhs.cols()) *
+//                        (ul)16);
+// }
 BENCHMARK_F(MyFixture, GMRES_ILU)(benchmark::State &st) {
+  Eigen::Index iters;
+  double errs;
   for (auto _ : st) {
     GMRESILUSolver solver;
     solver.setspTol(this->spTol);
     solver.setdropTol(this->dropTol);
     solver.solve(this->lhs, this->rhs, this->tol);
+    iters = solver.iters;
+    errs = solver.errs;
   }
+  print("Solver Iters: ", iters, " Solver Errs: ", errs);
+  st.SetBytesProcessed((ul)st.iterations() * (ul)(lhs.rows() * lhs.cols()) *
+                       (ul)16);
+}
+BENCHMARK_F(MyFixture, hodlr_dmgres)(benchmark::State &st) {
+  Eigen::Index iters;
+  double errs;
+  for (auto _ : st) {
+    HodlrDgmres solver;
+    solver.setdropTol(this->dropTol);
+    solver.setspTol(this->spTol);
+    solver.solve(this->lhs, this->rhs, this->tol);
+    iters = solver.iters;
+    errs = solver.errs;
+  }
+  print("Solver Iters: ", iters, " Solver Errs: ", errs);
   st.SetBytesProcessed((ul)st.iterations() * (ul)(lhs.rows() * lhs.cols()) *
                        (ul)16);
 }
